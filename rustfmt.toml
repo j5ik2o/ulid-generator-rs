@@ -1,0 +1,5 @@
+newline_style = "unix"
+
+indent_style = "Block"
+reorder_imports = false
+tab_spaces = 2
