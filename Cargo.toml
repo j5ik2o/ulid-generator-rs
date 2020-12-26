@@ -1,0 +1,12 @@
+[package]
+name = "ulid-rs"
+version = "0.1.0"
+authors = ["Junichi Kato <j5ik2o@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = { version = "0.7.3" }
+chrono = { version = "0.4"}
+serde = { version = "1.0", optional = true }
