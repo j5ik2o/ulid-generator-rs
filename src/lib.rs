@@ -3,8 +3,8 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 
 use chrono::{DateTime, Duration, TimeZone, Utc};
-use rand::rngs::ThreadRng;
 use rand::RngCore;
+use rand::rngs::ThreadRng;
 
 use crate::ULIDError::RandomGenError;
 
@@ -106,6 +106,7 @@ impl ToString for ULID {
 }
 
 impl ULID {
+  #[inline]
   pub fn new(most_significant_bits: u64, least_significant_bits: u64) -> Self {
     Self {
       most_significant_bits,
@@ -190,6 +191,7 @@ impl TryFrom<ByteArray> for ULID {
 }
 
 impl ULIDGenerator {
+  #[inline]
   pub fn new() -> Self {
     Self {
       rng: rand::thread_rng(),
@@ -205,12 +207,14 @@ impl ULIDGenerator {
     ULID::new(most_significant_bits, least_significant_bits)
   }
 
+  #[inline]
   fn check_timestamp(timestamp: u64) {
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
       panic!("ULID does not support timestamps after +10889-08-02T05:31:50.655Z!")
     }
   }
 
+  #[inline]
   fn random(&mut self, size: usize) -> Result<ByteArray, ULIDError> {
     let mut b: Vec<u8> = Vec::with_capacity(size);
     b.resize(size, 0u8);
@@ -221,14 +225,15 @@ impl ULIDGenerator {
     }
   }
 
+  #[inline]
   fn unix_time_stamp() -> i64 {
     Utc::now().timestamp_millis()
   }
 
   #[inline]
   fn generate_random<F>(mut random_gen: F) -> (u64, u64)
-  where
-    F: FnMut(usize) -> ByteArray,
+    where
+      F: FnMut(usize) -> ByteArray,
   {
     let bytes = random_gen(10);
 
@@ -252,7 +257,7 @@ impl ULIDGenerator {
 mod tests {
   use std::convert::TryFrom;
 
-  use crate::{ULIDGenerator, ULID};
+  use crate::{ULID, ULIDGenerator};
 
   #[test]
   fn it_works() {
