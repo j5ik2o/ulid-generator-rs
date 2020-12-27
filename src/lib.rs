@@ -182,6 +182,7 @@ pub fn parse_crockford_u128(input: &str) -> Result<u128, ULIDError> {
 }
 
 const MASK_U64: u64 = 0b11111;
+const MASK_U128: u128 = 0b11111;
 
 pub fn append_crockford_u64_tuple(value: (u64, u64), to_append_to: &mut String) {
   to_append_to.push(ENCODING_DIGITS[(value.0 >> 61) as usize]);
@@ -213,6 +214,35 @@ pub fn append_crockford_u64_tuple(value: (u64, u64), to_append_to: &mut String) 
   to_append_to.push(ENCODING_DIGITS[((value.1 >> 10) & MASK_U64) as usize]);
   to_append_to.push(ENCODING_DIGITS[((value.1 >> 5) & MASK_U64) as usize]);
   to_append_to.push(ENCODING_DIGITS[(value.1 & MASK_U64) as usize]);
+}
+
+pub fn append_crockford_u128(value: u128, to_append_to: &mut String) {
+  to_append_to.push(ENCODING_DIGITS[(value >> 125) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 120) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 115) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 110) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 105) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 100) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 95) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 90) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 85) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 80) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 75) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 70) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 65) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 60) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 55) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 50) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 45) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 40) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 35) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 30) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 25) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 20) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 15) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 10) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value >> 5) & MASK_U128) as usize]);
+  to_append_to.push(ENCODING_DIGITS[(value & MASK_U128) as usize]);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -330,8 +360,9 @@ impl ULIDGenerator {
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
       Err(ULIDError::TimestampOverflowError)
     } else {
-      let most_significant_bits = timestamp << 16 | u64::from(self.rng.gen::<u16>());
-      let least_significant_bits = self.rng.gen::<u64>();
+      let (most_rnd, least_rnd): (u16, u64) = self.rng.gen();
+      let most_significant_bits = timestamp << 16 | u64::from(most_rnd);
+      let least_significant_bits = least_rnd;
       Ok(ULID::new(most_significant_bits, least_significant_bits))
     }
   }
@@ -342,22 +373,6 @@ mod tests {
   use std::convert::TryFrom;
 
   use crate::{ULID, ULIDError, ULIDGenerator};
-
-  #[test]
-  fn it_works() {
-    let mut ulid_generator = ULIDGenerator::new();
-    let ulid: ULID = ulid_generator.generate().unwrap();
-    println!("{:?}", ulid);
-    println!("{:?}", ulid.to_string());
-
-    let s = ulid.to_string().parse::<ULID>();
-    println!("{:?}", s);
-
-    let b = ulid.to_bytes();
-    println!("{:?}", b);
-    let t = ULID::try_from(b).unwrap();
-    println!("{:?}", t);
-  }
 
   #[test]
   fn new() {
