@@ -7,68 +7,212 @@ use rand::Rng;
 use rand::rngs::ThreadRng;
 use thiserror::Error;
 
+#[derive(Debug, Error, Clone, PartialEq)]
+pub enum ULIDError {
+  #[error("data store disconnected")]
+  GenerateRandomError { msg: String },
+  #[error("data store disconnected")]
+  InvalidLength,
+  #[error("data store disconnected")]
+  InvalidChar(char),
+  #[error("data store disconnected")]
+  DataTypeOverflow,
+  #[error("data must be 16 bytes in length!")]
+  InvalidByteArrayError,
+  #[error("ulidString must not exceed '7ZZZZZZZZZZZZZZZZZZZZZZZZZ'!")]
+  TimestampOverflowError,
+}
+
 const ULID_STRING_LENGTH: u32 = 26;
 const ULID_BYTES_LENGTH: u32 = 16;
 const TIMESTAMP_OVERFLOW_MASK: u64 = 0xffff000000000000;
-const MASK_BITS: u32 = 5;
-const MASK: u64 = 0x1f;
-const ENCODING_CHARS: [char; 32] = [
-  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J',
-  'K', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z',
-];
-const DECODING_CHARS: [i32; 123] = [
+
+#[rustfmt::skip]
+static ENCODING_DIGITS: [char; 32] = [
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K',
+    'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X',
+    'Y', 'Z',
+  ];
+
+#[rustfmt::skip]
+static DECODING_DIGITS: [Option<u8>; 123] = [
   // 0
-  -1, -1, -1, -1, -1, -1, -1, -1, // 8
-  -1, -1, -1, -1, -1, -1, -1, -1, // 16
-  -1, -1, -1, -1, -1, -1, -1, -1, // 24
-  -1, -1, -1, -1, -1, -1, -1, -1, // 32
-  -1, -1, -1, -1, -1, -1, -1, -1, // 40
-  -1, -1, -1, -1, -1, -1, -1, -1, // 48
-  0, 1, 2, 3, 4, 5, 6, 7, // 56
-  8, 9, -1, -1, -1, -1, -1, -1, // 64
-  -1, 10, 11, 12, 13, 14, 15, 16, // 72
-  17, 1, 18, 19, 1, 20, 21, 0, // 80
-  22, 23, 24, 25, 26, -1, 27, 28, // 88
-  29, 30, 31, -1, -1, -1, -1, -1, // 96
-  -1, 10, 11, 12, 13, 14, 15, 16, // 104
-  17, 1, 18, 19, 1, 20, 21, 0, // 112
-  22, 23, 24, 25, 26, -1, 27, 28, // 120
-  29, 30, 31,
+  None, None, None, None, None, None, None, None,
+  // 8
+  None, None, None, None, None, None, None, None,
+  // 16
+  None, None, None, None, None, None, None, None,
+  // 24
+  None, None, None, None, None, None, None, None,
+  // 32
+  None, None, None, None, None, None, None, None,
+  // 40
+  None, None, None, None, None, None, None, None,
+  // 48
+  Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), Some(6), Some(7),
+  // 56
+  Some(8), Some(9), None, None, None, None, None, None,
+  // 64
+  None, Some(10), Some(11), Some(12), Some(13), Some(14), Some(15), Some(16),
+  // 72
+  Some(17), Some(1), Some(18), Some(19), Some(1), Some(20), Some(21), Some(0),
+  // 80
+  Some(22), Some(23), Some(24), Some(25), Some(26), None, Some(27), Some(28),
+  // 88
+  Some(29), Some(30), Some(31), None, None, None, None, None,
+  // 96
+  None, Some(10), Some(11), Some(12), Some(13), Some(14), Some(15), Some(16),
+  // 104
+  Some(17), Some(1), Some(18), Some(19), Some(1), Some(20), Some(21), Some(0),
+  // 112
+  Some(22), Some(23), Some(24), Some(25), Some(26), None, Some(27), Some(28),
+  // 120
+  Some(29), Some(30), Some(31),
 ];
 
-fn internal_write_crockford(value: u64, count: u32) -> String {
-  (0..count)
-    .into_iter()
-    .fold("".to_string(), |mut result, i| {
-      let index = (value >> ((count - i - 1) * MASK_BITS)) & MASK;
-      result.push(ENCODING_CHARS[index as usize]);
-      result
-    })
+fn resolve_u64_value_for_char(c: char) -> Result<u64, ULIDError> {
+  let index = c as usize;
+  if index < DECODING_DIGITS.len() {
+    if let Some(u8_value) = DECODING_DIGITS[index] {
+      return Ok(u64::from(u8_value));
+    }
+  }
+  Err(ULIDError::InvalidChar(c))
 }
 
-fn internal_parse_crockford(input: &str) -> u64 {
-  let length = input.len();
-  if length > 12 {
-    panic!("input length must not exceed 12 but was {}!", length)
+fn resolve_u128_value_for_char(c: char) -> Result<u128, ULIDError> {
+  let index = c as usize;
+  if index < DECODING_DIGITS.len() {
+    if let Some(u8_value) = DECODING_DIGITS[index] {
+      return Ok(u128::from(u8_value));
+    }
   }
-  let result = input
-    .chars()
-    .enumerate()
-    .into_iter()
-    .fold(0u64, |result, (i, current)| {
-      let value = if (current as usize) < DECODING_CHARS.len() {
-        DECODING_CHARS[current as usize]
-      } else {
-        -1
-      };
-      if value < 0 {
-        panic!("Illegal character '{}'!", current)
-      }
-      let factor = (length as u32) - 1u32 - (i as u32);
-      let value = (value as u64) << (factor * MASK_BITS);
-      result | value
-    });
-  result
+  Err(ULIDError::InvalidChar(c))
+}
+
+pub fn parse_crockford_u64_tuple(input: &str) -> Result<(u64, u64), ULIDError> {
+  let length = input.len();
+  if length != ULID_STRING_LENGTH as usize {
+    return Err(ULIDError::InvalidLength);
+  }
+
+  let mut chars = input.chars();
+  let highest = resolve_u64_value_for_char(chars.next().unwrap())?;
+  if highest > 7 {
+    return Err(ULIDError::DataTypeOverflow);
+  }
+
+  let mut high: u64 = highest << 61;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 56;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 51;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 46;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 41;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 36;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 31;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 26;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 21;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 16;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 11;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 6;
+  high |= resolve_u64_value_for_char(chars.next().unwrap())? << 1;
+
+  let split = resolve_u64_value_for_char(chars.next().unwrap())?;
+  high |= split >> 4;
+
+  let mut low: u64 = split << 60;
+
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 55;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 50;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 45;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 40;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 35;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 30;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 25;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 20;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 15;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 10;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())? << 5;
+  low |= resolve_u64_value_for_char(chars.next().unwrap())?;
+
+  Ok((high, low))
+}
+
+pub fn parse_crockford_u128(input: &str) -> Result<u128, ULIDError> {
+  let length = input.len();
+  if length != 26 {
+    return Err(ULIDError::InvalidLength);
+  }
+
+  let mut chars = input.chars();
+
+  let highest = resolve_u128_value_for_char(chars.next().unwrap())?;
+  if highest > 7 {
+    return Err(ULIDError::DataTypeOverflow);
+  }
+
+  let mut result: u128 = highest << 125;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 120;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 115;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 110;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 105;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 100;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 95;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 90;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 85;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 80;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 75;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 70;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 65;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 60;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 55;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 50;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 45;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 40;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 35;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 30;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 25;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 20;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 15;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 10;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())? << 5;
+  result |= resolve_u128_value_for_char(chars.next().unwrap())?;
+
+  Ok(result)
+}
+
+const MASK_U64: u64 = 0b11111;
+
+pub fn append_crockford_u64_tuple(value: (u64, u64), to_append_to: &mut String) {
+  to_append_to.push(ENCODING_DIGITS[(value.0 >> 61) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 56) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 51) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 46) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 41) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 36) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 31) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 26) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 21) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 16) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 11) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 6) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.0 >> 1) & MASK_U64) as usize]);
+
+  let split = ((value.0 << 4) & MASK_U64) | ((value.1 >> 60) & MASK_U64);
+  to_append_to.push(ENCODING_DIGITS[split as usize]);
+
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 55) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 50) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 45) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 40) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 35) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 30) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 25) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 20) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 15) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 10) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[((value.1 >> 5) & MASK_U64) as usize]);
+  to_append_to.push(ENCODING_DIGITS[(value.1 & MASK_U64) as usize]);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -95,12 +239,11 @@ impl PartialOrd for ULID {
 
 impl ToString for ULID {
   fn to_string(&self) -> String {
-    let mut result = internal_write_crockford(self.to_epoch_milli_as_long(), 10);
-    result.push_str(&internal_write_crockford(
-      (self.most_significant_bits & 0xffff) << 24 | self.least_significant_bits >> 40,
-      8,
-    ));
-    result.push_str(&internal_write_crockford(self.least_significant_bits, 8));
+    let mut result = String::with_capacity(ULID_STRING_LENGTH as usize);
+    append_crockford_u64_tuple(
+      (self.most_significant_bits, self.least_significant_bits),
+      &mut result,
+    );
     result
   }
 }
@@ -143,40 +286,14 @@ pub struct ULIDGenerator {
   rng: ThreadRng,
 }
 
-#[derive(Debug, Error, Clone)]
-pub enum ULIDError {
-  #[error("data store disconnected")]
-  GenerateRandomError { msg: String },
-  #[error("data must be 16 bytes in length!")]
-  InvalidByteArrayError,
-  #[error("ulidString must not exceed '7ZZZZZZZZZZZZZZZZZZZZZZZZZ'!")]
-  TimestampOverflowError,
-}
-
 type ByteArray = Vec<u8>;
 
 impl FromStr for ULID {
   type Err = ULIDError;
 
   fn from_str(ulid_str: &str) -> Result<Self, Self::Err> {
-    let len = ulid_str.len();
-    if ulid_str.len() as u32 != ULID_STRING_LENGTH {
-      panic!(
-        "ulidString must be exactly {} chars long.",
-        ULID_STRING_LENGTH
-      )
-    }
-    let timestamp = internal_parse_crockford(&ulid_str[0..10]);
-    if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
-      Err(ULIDError::TimestampOverflowError)
-    } else {
-      let part1 = internal_parse_crockford(&ulid_str[10..18]);
-      let part2 = internal_parse_crockford(&ulid_str[18..len]);
-
-      let most_significant_bits = (timestamp << 16) | (part1 >> 24);
-      let least_significant_bits = part2 | (part1 << 40);
-      Ok(ULID::new(most_significant_bits, least_significant_bits))
-    }
+    let (m, l) = parse_crockford_u64_tuple(ulid_str)?;
+    Ok(ULID::new(m, l))
   }
 }
 
