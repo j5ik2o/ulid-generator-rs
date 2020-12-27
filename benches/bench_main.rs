@@ -1,6 +1,6 @@
 use criterion::*;
 
-use ulid_rs_j5ik2o::ULIDGenerator;
+use ulid_rs_j5ik2o::{ULIDGenerator, ULID};
 use chrono::Utc;
 use rand::Rng;
 
@@ -14,6 +14,11 @@ fn j5ik2o_ulid_to_string(uild: &ulid_rs_j5ik2o::ULID) {
   uild.to_string();
 }
 
+#[inline]
+fn j5ik2o_ulid_gen_to_string(gen: &mut ULIDGenerator) {
+  gen.generate().unwrap().to_string();
+}
+
 /// dylanhart/ulid-rs
 #[inline]
 fn dylanhart_ulid_rs_gen_ulid() {
@@ -23,6 +28,11 @@ fn dylanhart_ulid_rs_gen_ulid() {
 #[inline]
 fn dylanhart_ulid_rs_to_string(ulid: &ulid::Ulid) {
   ulid.to_string();
+}
+
+#[inline]
+fn dylanhart_ulid_rs_gen_to_string() {
+  ulid::Ulid::new().to_string();
 }
 
 /// huxi/rusty_ulid
@@ -36,6 +46,11 @@ fn huxi_rusty_ulid_to_string(ulid: &rusty_ulid::Ulid) {
   ulid.to_string();
 }
 
+#[inline]
+fn huxi_rusty_ulid_gen_to_string() {
+  rusty_ulid::Ulid::generate().to_string();
+}
+
 /// suyash/ulid-rs
 #[inline]
 fn suyash_ulid_rs_gen_ulid() {
@@ -47,6 +62,14 @@ fn suyash_ulid_rs_gen_ulid() {
 #[inline]
 fn suyash_ulid_rs_to_string(ulid: &ulid_rs::Ulid) {
   ulid.to_string();
+}
+
+#[inline]
+fn suyash_ulid_rs_gen_to_string() {
+  ulid_rs::Ulid::new(Utc::now().timestamp_millis() as u64, || {
+    rand::thread_rng().gen::<u8>()
+  })
+  .to_string();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -88,6 +111,27 @@ fn criterion_benchmark(c: &mut Criterion) {
   group.bench_with_input(BenchmarkId::new("suyash/ulid-rs/str", op), &op, |b, i| {
     b.iter(|| suyash_ulid_rs_to_string(&ulid))
   });
+  // ---
+  group.bench_with_input(
+    BenchmarkId::new("j5ik2o/ulid-rs/gen_to_str", op),
+    &op,
+    |b, i| b.iter(|| j5ik2o_ulid_gen_to_string(&mut gen)),
+  );
+  group.bench_with_input(
+    BenchmarkId::new("dylanhart/ulid-rs/gen_to_str", op),
+    &op,
+    |b, i| b.iter(|| dylanhart_ulid_rs_gen_to_string()),
+  );
+  group.bench_with_input(
+    BenchmarkId::new("huxi/rusty_ulid/gen_to_str", op),
+    &op,
+    |b, i| b.iter(|| huxi_rusty_ulid_gen_to_string()),
+  );
+  group.bench_with_input(
+    BenchmarkId::new("suyash/ulid-rs/gen_to_str", op),
+    &op,
+    |b, i| b.iter(|| suyash_ulid_rs_gen_to_string()),
+  );
   group.finish();
 }
 
