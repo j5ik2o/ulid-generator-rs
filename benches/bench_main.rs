@@ -4,7 +4,7 @@ use ulid_rs::ULIDGenerator;
 
 #[inline]
 fn gen_ulid_and_then_to_string(gen: &mut ULIDGenerator) {
-  gen.generate().to_string();
+  gen.generate().unwrap().to_string();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

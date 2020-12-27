@@ -3,12 +3,14 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 
 use chrono::{DateTime, Duration, TimeZone, Utc};
-use rand::RngCore;
+use rand::{Rng, RngCore};
 use rand::rngs::ThreadRng;
+use thiserror::Error;
 
-use crate::ULIDError::RandomGenError;
+use crate::ULIDError::GenerateRandomError;
 
-const ULID_BYTES_LENGTH: i32 = 16;
+const ULID_STRING_LENGTH: u32 = 26;
+const ULID_BYTES_LENGTH: u32 = 16;
 const TIMESTAMP_OVERFLOW_MASK: u64 = 0xffff000000000000;
 const MASK_BITS: u32 = 5;
 const MASK: u64 = 0x1f;
@@ -143,10 +145,13 @@ pub struct ULIDGenerator {
   rng: ThreadRng,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Error, Clone)]
 pub enum ULIDError {
-  RandomGenError { msg: String },
+  #[error("data store disconnected")]
+  GenerateRandomError { msg: String },
+  #[error("data must be 16 bytes in length!")]
   InvalidByteArrayError,
+  #[error("ulidString must not exceed '7ZZZZZZZZZZZZZZZZZZZZZZZZZ'!")]
   TimestampOverflowError,
 }
 
@@ -157,16 +162,23 @@ impl FromStr for ULID {
 
   fn from_str(ulid_str: &str) -> Result<Self, Self::Err> {
     let len = ulid_str.len();
-    let ts = interal_parse_crockford(&ulid_str[0..10]);
-    if (ts & TIMESTAMP_OVERFLOW_MASK) != 0 {
-      return Err(ULIDError::TimestampOverflowError);
+    if ulid_str.len() as u32 != ULID_STRING_LENGTH {
+      panic!(
+        "ulidString must be exactly {} chars long.",
+        ULID_STRING_LENGTH
+      )
     }
-    let part1 = interal_parse_crockford(&ulid_str[10..18]);
-    let part2 = interal_parse_crockford(&ulid_str[18..len]);
+    let timestamp = interal_parse_crockford(&ulid_str[0..10]);
+    if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
+      Err(ULIDError::TimestampOverflowError)
+    } else {
+      let part1 = interal_parse_crockford(&ulid_str[10..18]);
+      let part2 = interal_parse_crockford(&ulid_str[18..len]);
 
-    let most_significant_bits = (ts << 16) | (part1 >> 24);
-    let least_significant_bits = part2 | (part1 << 40);
-    Ok(ULID::new(most_significant_bits, least_significant_bits))
+      let most_significant_bits = (timestamp << 16) | (part1 >> 24);
+      let least_significant_bits = part2 | (part1 << 40);
+      Ok(ULID::new(most_significant_bits, least_significant_bits))
+    }
   }
 }
 
@@ -177,11 +189,11 @@ impl TryFrom<ByteArray> for ULID {
     if value.len() != ULID_BYTES_LENGTH as usize {
       Err(ULIDError::InvalidByteArrayError)
     } else {
-      let mut most_significant_bits = 0u64;
+      let mut most_significant_bits: u64 = 0u64;
       for i in 0..8 {
         most_significant_bits = (most_significant_bits << 8) | (value[i] & 0xff) as u64;
       }
-      let mut least_significant_bits = 0u64;
+      let mut least_significant_bits: u64 = 0u64;
       for i in 8..16 {
         least_significant_bits = (least_significant_bits << 8) | (value[i] & 0xff) as u64;
       }
@@ -198,30 +210,14 @@ impl ULIDGenerator {
     }
   }
 
-  pub fn generate(&mut self) -> ULID {
-    let ts = Self::unix_time_stamp() as u64;
-    Self::check_timestamp(ts);
-    let (r1, r2) = Self::generate_random(|usize| self.random(usize).unwrap());
-    let most_significant_bits = (ts << 16) | (r1 >> 24);
-    let least_significant_bits = (r1 << 40) | r2;
-    ULID::new(most_significant_bits, least_significant_bits)
-  }
-
-  #[inline]
-  fn check_timestamp(timestamp: u64) {
+  pub fn generate(&mut self) -> Result<ULID, ULIDError> {
+    let timestamp = Self::unix_time_stamp() as u64;
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
-      panic!("ULID does not support timestamps after +10889-08-02T05:31:50.655Z!")
-    }
-  }
-
-  #[inline]
-  fn random(&mut self, size: usize) -> Result<ByteArray, ULIDError> {
-    let mut b: Vec<u8> = Vec::with_capacity(size);
-    b.resize(size, 0u8);
-    let result = self.rng.try_fill_bytes(&mut b[..]);
-    match result {
-      Ok(_) => Ok(b),
-      Err(e) => Err(RandomGenError { msg: e.to_string() }),
+      Err(ULIDError::TimestampOverflowError)
+    } else {
+      let most_significant_bits = timestamp << 16 | u64::from(self.rng.gen::<u16>());
+      let least_significant_bits = self.rng.gen::<u64>();
+      Ok(ULID::new(most_significant_bits, least_significant_bits))
     }
   }
 
@@ -229,40 +225,18 @@ impl ULIDGenerator {
   fn unix_time_stamp() -> i64 {
     Utc::now().timestamp_millis()
   }
-
-  #[inline]
-  fn generate_random<F>(mut random_gen: F) -> (u64, u64)
-    where
-      F: FnMut(usize) -> ByteArray,
-  {
-    let bytes = random_gen(10);
-
-    let mut random1 = ((bytes[0x0] & 0xff) as u64) << 32;
-    random1 |= ((bytes[0x1] & 0xff) as u64) << 24;
-    random1 |= ((bytes[0x2] & 0xff) as u64) << 16;
-    random1 |= ((bytes[0x3] & 0xff) as u64) << 8;
-    random1 |= (bytes[0x4] & 0xff) as u64;
-
-    let mut random2 = ((bytes[0x5] & 0xff) as u64) << 32;
-    random2 |= ((bytes[0x6] & 0xff) as u64) << 24;
-    random2 |= ((bytes[0x7] & 0xff) as u64) << 16;
-    random2 |= ((bytes[0x8] & 0xff) as u64) << 8;
-    random2 |= (bytes[0x9] & 0xff) as u64;
-
-    (random1, random2)
-  }
 }
 
 #[cfg(test)]
 mod tests {
   use std::convert::TryFrom;
 
-  use crate::{ULID, ULIDGenerator};
+  use crate::{ULID, ULIDError, ULIDGenerator};
 
   #[test]
   fn it_works() {
     let mut ulid_generator = ULIDGenerator::new();
-    let ulid: ULID = ulid_generator.generate();
+    let ulid: ULID = ulid_generator.generate().unwrap();
     println!("{:?}", ulid);
     println!("{:?}", ulid.to_string());
 
@@ -273,5 +247,18 @@ mod tests {
     println!("{:?}", b);
     let t = ULID::try_from(b).unwrap();
     println!("{:?}", t);
+  }
+
+  #[test]
+  fn new() {
+    let ulid = ULID::new(105449255778666307, 1874305465861347464);
+    assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648")
+  }
+
+  #[test]
+  fn parse() -> Result<(), ULIDError> {
+    let ulid = "01ETGRM6448X1HM0PYWG2KT648".parse::<ULID>()?;
+    assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648");
+    Ok(())
   }
 }
