@@ -3,11 +3,9 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 
 use chrono::{DateTime, Duration, TimeZone, Utc};
-use rand::{Rng, RngCore};
+use rand::Rng;
 use rand::rngs::ThreadRng;
 use thiserror::Error;
-
-use crate::ULIDError::GenerateRandomError;
 
 const ULID_STRING_LENGTH: u32 = 26;
 const ULID_BYTES_LENGTH: u32 = 16;
@@ -48,7 +46,7 @@ fn internal_write_crockford(value: u64, count: u32) -> String {
     })
 }
 
-fn interal_parse_crockford(input: &str) -> u64 {
+fn internal_parse_crockford(input: &str) -> u64 {
   let length = input.len();
   if length > 12 {
     panic!("input length must not exceed 12 but was {}!", length)
@@ -168,12 +166,12 @@ impl FromStr for ULID {
         ULID_STRING_LENGTH
       )
     }
-    let timestamp = interal_parse_crockford(&ulid_str[0..10]);
+    let timestamp = internal_parse_crockford(&ulid_str[0..10]);
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
       Err(ULIDError::TimestampOverflowError)
     } else {
-      let part1 = interal_parse_crockford(&ulid_str[10..18]);
-      let part2 = interal_parse_crockford(&ulid_str[18..len]);
+      let part1 = internal_parse_crockford(&ulid_str[10..18]);
+      let part2 = internal_parse_crockford(&ulid_str[18..len]);
 
       let most_significant_bits = (timestamp << 16) | (part1 >> 24);
       let least_significant_bits = part2 | (part1 << 40);
@@ -211,7 +209,7 @@ impl ULIDGenerator {
   }
 
   pub fn generate(&mut self) -> Result<ULID, ULIDError> {
-    let timestamp = Self::unix_time_stamp() as u64;
+    let timestamp = Utc::now().timestamp_millis() as u64;
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
       Err(ULIDError::TimestampOverflowError)
     } else {
@@ -219,11 +217,6 @@ impl ULIDGenerator {
       let least_significant_bits = self.rng.gen::<u64>();
       Ok(ULID::new(most_significant_bits, least_significant_bits))
     }
-  }
-
-  #[inline]
-  fn unix_time_stamp() -> i64 {
-    Utc::now().timestamp_millis()
   }
 }
 
