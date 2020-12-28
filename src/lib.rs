@@ -9,13 +9,13 @@ use thiserror::Error;
 
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum ULIDError {
-  #[error("data store disconnected")]
+  #[error("generate random error: msg = {msg}")]
   GenerateRandomError { msg: String },
-  #[error("data store disconnected")]
+  #[error("invalid length")]
   InvalidLength,
-  #[error("data store disconnected")]
+  #[error("invalid the char: {0}")]
   InvalidChar(char),
-  #[error("data store disconnected")]
+  #[error("data type overflow")]
   DataTypeOverflow,
   #[error("data must be 16 bytes in length!")]
   InvalidByteArrayError,
@@ -245,7 +245,7 @@ pub fn append_crockford_u128(value: u128, to_append_to: &mut String) {
   to_append_to.push(ENCODING_DIGITS[(value & MASK_U128) as usize]);
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ULID {
   most_significant_bits: u64,
   least_significant_bits: u64,
@@ -377,7 +377,9 @@ mod tests {
   #[test]
   fn new() {
     let ulid = ULID::new(105449255778666307, 1874305465861347464);
-    assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648")
+    assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648");
+    let ulid = ULID::new(105449255778666307, 1874305465861347465);
+    assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT649");
   }
 
   #[test]
