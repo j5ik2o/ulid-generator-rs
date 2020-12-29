@@ -1,8 +1,10 @@
+#![allow(unused_must_use)]
+#![allow(unused_variables)]
 use criterion::*;
 
-use ulid_rs_j5ik2o::{ULIDGenerator, ULID};
 use chrono::Utc;
 use rand::Rng;
+use ulid_generator_rs::*;
 
 #[inline]
 fn j5ik2o_uild_gen(gen: &mut ULIDGenerator) {
@@ -10,7 +12,7 @@ fn j5ik2o_uild_gen(gen: &mut ULIDGenerator) {
 }
 
 #[inline]
-fn j5ik2o_ulid_to_string(uild: &ulid_rs_j5ik2o::ULID) {
+fn j5ik2o_ulid_to_string(uild: &ULID) {
   uild.to_string();
 }
 

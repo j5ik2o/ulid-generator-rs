@@ -1,11 +1,15 @@
-use std::cmp::Ordering;
+#![feature(num_as_ne_bytes)]
+
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{DateTime, Duration, TimeZone, Utc, Local};
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use thiserror::Error;
+
+#[cfg(feature = "serde")]
+pub mod serde;
 
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum ULIDError {
@@ -245,70 +249,62 @@ pub fn append_crockford_u128(value: u128, to_append_to: &mut String) {
   to_append_to.push(ENCODING_DIGITS[(value & MASK_U128) as usize]);
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ULID {
-  most_significant_bits: u64,
-  least_significant_bits: u64,
+pub enum Endian {
+  LE,
+  BE,
 }
 
-impl PartialOrd for ULID {
-  fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-    if self.most_significant_bits < other.most_significant_bits {
-      Some(Ordering::Less)
-    } else if self.most_significant_bits > other.most_significant_bits {
-      Some(Ordering::Greater)
-    } else if self.least_significant_bits < other.least_significant_bits {
-      Some(Ordering::Less)
-    } else if self.least_significant_bits > other.least_significant_bits {
-      Some(Ordering::Greater)
-    } else {
-      Some(Ordering::Equal)
-    }
-  }
-}
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct ULID(u128);
 
 impl ToString for ULID {
   fn to_string(&self) -> String {
     let mut result = String::with_capacity(ULID_STRING_LENGTH as usize);
-    append_crockford_u64_tuple(
-      (self.most_significant_bits, self.least_significant_bits),
-      &mut result,
-    );
+    append_crockford_u128(self.0, &mut result);
     result
   }
 }
 
 impl ULID {
   #[inline]
-  pub fn new(most_significant_bits: u64, least_significant_bits: u64) -> Self {
-    Self {
-      most_significant_bits,
-      least_significant_bits,
-    }
+  pub fn new_u128(value: u128) -> Self {
+    Self(value)
+  }
+
+  #[inline]
+  pub fn new_u64(most_significant_bits: u64, least_significant_bits: u64) -> Self {
+    let value: u128 = (most_significant_bits as u128) << 64 | least_significant_bits as u128;
+    Self::new_u128(value)
+  }
+
+  pub fn most_significant_bits(&self) -> u64 {
+    (self.0 >> 64) as u64
+  }
+
+  pub fn least_significant_bits(&self) -> u64 {
+    (self.0 & 0x0000ffff) as u64
   }
 
   pub fn to_epoch_milli_as_long(&self) -> u64 {
-    self.most_significant_bits >> 16
+    (self.0 >> 80) as u64
   }
 
   pub fn to_epoch_milli_as_duration(&self) -> Duration {
     Duration::milliseconds(self.to_epoch_milli_as_long() as i64)
   }
 
-  pub fn to_date_time(&self) -> DateTime<Utc> {
-    Utc.timestamp_millis(self.to_epoch_milli_as_long() as i64)
+  pub fn to_date_time(&self) -> DateTime<Local> {
+    Local.timestamp_millis(self.to_epoch_milli_as_long() as i64)
   }
 
-  pub fn to_bytes(&self) -> ByteArray {
-    let mut result: ByteArray = Vec::with_capacity(16);
-    result.resize(16, 0);
-    for i in 0..8 {
-      result[i] = ((self.most_significant_bits >> ((7 - i) * 8)) & 0xff) as u8;
-    }
-    for i in 8..16 {
-      result[i] = ((self.least_significant_bits >> ((15 - i) * 8)) & 0xff) as u8;
-    }
-    result
+  pub fn to_vec(&self, endian: Endian) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(ULID_BYTES_LENGTH as usize);
+    let bytes = match endian {
+      Endian::LE => self.0.to_le_bytes(),
+      Endian::BE => self.0.to_be_bytes(),
+    };
+    buf.copy_from_slice(&bytes);
+    buf
   }
 }
 
@@ -322,8 +318,20 @@ impl FromStr for ULID {
   type Err = ULIDError;
 
   fn from_str(ulid_str: &str) -> Result<Self, Self::Err> {
-    let (m, l) = parse_crockford_u64_tuple(ulid_str)?;
-    Ok(ULID::new(m, l))
+    let value = parse_crockford_u128(ulid_str)?;
+    Ok(ULID::new_u128(value))
+  }
+}
+
+impl From<u128> for ULID {
+  fn from(value: u128) -> Self {
+    Self::new_u128(value)
+  }
+}
+
+impl From<(u64, u64)> for ULID {
+  fn from((m, l): (u64, u64)) -> Self {
+    Self::new_u64(m, l)
   }
 }
 
@@ -334,15 +342,10 @@ impl TryFrom<ByteArray> for ULID {
     if value.len() != ULID_BYTES_LENGTH as usize {
       Err(ULIDError::InvalidByteArrayError)
     } else {
-      let mut most_significant_bits: u64 = 0u64;
-      for i in 0..8 {
-        most_significant_bits = (most_significant_bits << 8) | (value[i] & 0xff) as u64;
-      }
-      let mut least_significant_bits: u64 = 0u64;
-      for i in 8..16 {
-        least_significant_bits = (least_significant_bits << 8) | (value[i] & 0xff) as u64;
-      }
-      Ok(ULID::new(most_significant_bits, least_significant_bits))
+      let result = value
+        .iter()
+        .fold(0u128, |result, e| (result << 8) | (*e & 0xff) as u128);
+      Ok(ULID::new_u128(result))
     }
   }
 }
@@ -360,26 +363,29 @@ impl ULIDGenerator {
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
       Err(ULIDError::TimestampOverflowError)
     } else {
-      let (most_rnd, least_rnd): (u16, u64) = self.rng.gen();
+      let (most_rnd, least_significant_bits): (u16, u64) = self.rng.gen();
       let most_significant_bits = timestamp << 16 | u64::from(most_rnd);
-      let least_significant_bits = least_rnd;
-      Ok(ULID::new(most_significant_bits, least_significant_bits))
+      Ok(ULID::new_u64(most_significant_bits, least_significant_bits))
     }
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use std::convert::TryFrom;
-
   use crate::{ULID, ULIDError, ULIDGenerator};
 
   #[test]
   fn new() {
-    let ulid = ULID::new(105449255778666307, 1874305465861347464);
+    let ulid = ULID::new_u64(105449255778666307, 1874305465861347464);
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648");
-    let ulid = ULID::new(105449255778666307, 1874305465861347465);
+    let ulid = ULID::new_u64(105449255778666307, 1874305465861347465);
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT649");
+  }
+
+  #[test]
+  fn ts() {
+    let ulid = ULIDGenerator::new().generate().unwrap();
+    println!("{}", ulid.to_date_time().to_rfc2822());
   }
 
   #[test]

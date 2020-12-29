@@ -1,5 +1,5 @@
 [package]
-name = "ulid-rs-j5ik2o"
+name = "ulid-generator-rs"
 version = "0.0.1"
 description = "ULID generation and processing library for Rust"
 authors = ["Junichi Kato <j5ik2o@gmail.com>"]
@@ -14,7 +14,7 @@ categories = ["data-structures","date-and-time","encoding","parsing","value-form
 rand = { version = "0.7.3" }
 chrono = { version = "0.4"}
 thiserror = { version = "1.0.20" }
-serde = { version = "1.0", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 criterion = "0.3"
