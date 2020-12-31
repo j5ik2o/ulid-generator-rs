@@ -1,14 +1,14 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use uuid::Uuid;
 
-use crate::{ULID, ULID_STRING_LENGTH};
+use crate::ULID;
 
 impl Serialize for ULID {
   fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
   where
     S: Serializer,
   {
-    let mut buffer = [0; ULID_STRING_LENGTH];
-    let text = self.to_str(&mut buffer).unwrap();
+    let text = self.to_string();
     text.serialize(serializer)
   }
 }
@@ -19,22 +19,43 @@ impl<'de> Deserialize<'de> for ULID {
     D: Deserializer<'de>,
   {
     let deserialized_str = String::deserialize(deserializer)?;
-    Self::from_string(&deserialized_str).map_err(serde::de::Error::custom)
+    deserialized_str
+      .parse::<ULID>()
+      .map_err(serde::de::Error::custom)
+  }
+}
+
+pub mod ulid_as_u128 {
+  use super::*;
+
+  /// Serializes a ULID as a u128 type.
+  pub fn serialize<S>(value: &ULID, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    value.0.serialize(serializer)
+  }
+
+  /// Deserializes a ULID from a u128 type.
+  pub fn deserialize<'de, D>(deserializer: D) -> Result<ULID, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    let deserialized_u128 = u128::deserialize(deserializer)?;
+    Ok(ULID::from(deserialized_u128))
   }
 }
 
 #[cfg(all(feature = "uuid", feature = "serde"))]
 pub mod ulid_as_uuid {
-  use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-  use crate::ULID;
+  use super::*;
 
   /// Converts the ULID to a UUID and serializes it as a string.
   pub fn serialize<S>(value: &ULID, serializer: S) -> Result<S::Ok, S::Error>
   where
     S: Serializer,
   {
-    let uuid: Uuid = (*value).into();
+    let uuid: Uuid = value.clone().into();
     uuid.to_string().serialize(serializer)
   }
 
@@ -45,6 +66,6 @@ pub mod ulid_as_uuid {
   {
     let de_string = String::deserialize(deserializer)?;
     let de_uuid = Uuid::parse_str(&de_string).map_err(serde::de::Error::custom)?;
-    Ok(Ulid::from(de_uuid))
+    Ok(ULID::from(de_uuid))
   }
 }

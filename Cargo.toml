@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "ULID generation and processing library for Rust"
 authors = ["Junichi Kato <j5ik2o@gmail.com>"]
 edition = "2018"
-
+license = "MIT OR Apache-2.0"
 keywords = ["ulid", "uuid", "sortable", "identifier"]
 categories = ["data-structures","date-and-time","encoding","parsing","value-formatting"]
 
@@ -15,6 +15,7 @@ rand = { version = "0.7.3" }
 chrono = { version = "0.4"}
 thiserror = { version = "1.0.20" }
 serde = { version = "1.0", features = ["derive"], optional = true }
+uuid = { version = "0.8.1", optional = true }
 
 [dev-dependencies]
 criterion = "0.3"
