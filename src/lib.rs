@@ -1,4 +1,3 @@
-#![feature(num_as_ne_bytes)]
 #![allow(dead_code)]
 use std::convert::TryFrom;
 use std::fmt;
@@ -100,7 +99,6 @@ fn parse_crockford_u64_tuple(input: &str) -> Result<(u64, u64), ULIDError> {
   if length != ULID_STRING_LENGTH as usize {
     return Err(ULIDError::InvalidLength);
   }
-
   let mut chars = input.chars();
   let highest: u64 = resolve_value_for_char::<u64>(chars.next().unwrap())?;
   if highest > 7 {
@@ -146,14 +144,11 @@ fn parse_crockford_u128(input: &str) -> Result<u128, ULIDError> {
   if length != 26 {
     return Err(ULIDError::InvalidLength);
   }
-
   let mut chars = input.chars();
-
   let highest: u128 = resolve_value_for_char::<u128>(chars.next().unwrap())?;
   if highest > 7 {
     return Err(ULIDError::DataTypeOverflow);
   }
-
   let mut result: u128 = highest << 125;
   result |= resolve_value_for_char::<u128>(chars.next().unwrap())? << 120;
   result |= resolve_value_for_char::<u128>(chars.next().unwrap())? << 115;
@@ -180,7 +175,6 @@ fn parse_crockford_u128(input: &str) -> Result<u128, ULIDError> {
   result |= resolve_value_for_char::<u128>(chars.next().unwrap())? << 10;
   result |= resolve_value_for_char::<u128>(chars.next().unwrap())? << 5;
   result |= resolve_value_for_char::<u128>(chars.next().unwrap())?;
-
   Ok(result)
 }
 
@@ -221,36 +215,35 @@ const MASK_U128: u128 = 0b11111;
 
 fn append_crockford_u128(value: u128) -> [u8; 26] {
   let mut ans = [0; 26];
-
   ans[0] = ENCODING_DIGITS[(value >> 125) as usize];
-  ans[1] = (ENCODING_DIGITS[((value >> 120) & MASK_U128) as usize]);
-  ans[2] = (ENCODING_DIGITS[((value >> 115) & MASK_U128) as usize]);
-  ans[3] = (ENCODING_DIGITS[((value >> 110) & MASK_U128) as usize]);
-  ans[4] = (ENCODING_DIGITS[((value >> 105) & MASK_U128) as usize]);
-  ans[5] = (ENCODING_DIGITS[((value >> 100) & MASK_U128) as usize]);
-  ans[6] = (ENCODING_DIGITS[((value >> 95) & MASK_U128) as usize]);
-  ans[7] = (ENCODING_DIGITS[((value >> 90) & MASK_U128) as usize]);
-  ans[8] = (ENCODING_DIGITS[((value >> 85) & MASK_U128) as usize]);
-  ans[9] = (ENCODING_DIGITS[((value >> 80) & MASK_U128) as usize]);
-  ans[10] = (ENCODING_DIGITS[((value >> 75) & MASK_U128) as usize]);
-  ans[11] = (ENCODING_DIGITS[((value >> 70) & MASK_U128) as usize]);
-  ans[12] = (ENCODING_DIGITS[((value >> 65) & MASK_U128) as usize]);
-  ans[13] = (ENCODING_DIGITS[((value >> 60) & MASK_U128) as usize]);
-  ans[14] = (ENCODING_DIGITS[((value >> 55) & MASK_U128) as usize]);
-  ans[15] = (ENCODING_DIGITS[((value >> 50) & MASK_U128) as usize]);
-  ans[16] = (ENCODING_DIGITS[((value >> 45) & MASK_U128) as usize]);
-  ans[17] = (ENCODING_DIGITS[((value >> 40) & MASK_U128) as usize]);
-  ans[18] = (ENCODING_DIGITS[((value >> 35) & MASK_U128) as usize]);
-  ans[19] = (ENCODING_DIGITS[((value >> 30) & MASK_U128) as usize]);
-  ans[20] = (ENCODING_DIGITS[((value >> 25) & MASK_U128) as usize]);
-  ans[21] = (ENCODING_DIGITS[((value >> 20) & MASK_U128) as usize]);
-  ans[22] = (ENCODING_DIGITS[((value >> 15) & MASK_U128) as usize]);
-  ans[23] = (ENCODING_DIGITS[((value >> 10) & MASK_U128) as usize]);
-  ans[24] = (ENCODING_DIGITS[((value >> 5) & MASK_U128) as usize]);
-  ans[25] = (ENCODING_DIGITS[(value & MASK_U128) as usize]);
+  ans[1] = ENCODING_DIGITS[((value >> 120) & MASK_U128) as usize];
+  ans[2] = ENCODING_DIGITS[((value >> 115) & MASK_U128) as usize];
+  ans[3] = ENCODING_DIGITS[((value >> 110) & MASK_U128) as usize];
+  ans[4] = ENCODING_DIGITS[((value >> 105) & MASK_U128) as usize];
+  ans[5] = ENCODING_DIGITS[((value >> 100) & MASK_U128) as usize];
+  ans[6] = ENCODING_DIGITS[((value >> 95) & MASK_U128) as usize];
+  ans[7] = ENCODING_DIGITS[((value >> 90) & MASK_U128) as usize];
+  ans[8] = ENCODING_DIGITS[((value >> 85) & MASK_U128) as usize];
+  ans[9] = ENCODING_DIGITS[((value >> 80) & MASK_U128) as usize];
+  ans[10] = ENCODING_DIGITS[((value >> 75) & MASK_U128) as usize];
+  ans[11] = ENCODING_DIGITS[((value >> 70) & MASK_U128) as usize];
+  ans[12] = ENCODING_DIGITS[((value >> 65) & MASK_U128) as usize];
+  ans[13] = ENCODING_DIGITS[((value >> 60) & MASK_U128) as usize];
+  ans[14] = ENCODING_DIGITS[((value >> 55) & MASK_U128) as usize];
+  ans[15] = ENCODING_DIGITS[((value >> 50) & MASK_U128) as usize];
+  ans[16] = ENCODING_DIGITS[((value >> 45) & MASK_U128) as usize];
+  ans[17] = ENCODING_DIGITS[((value >> 40) & MASK_U128) as usize];
+  ans[18] = ENCODING_DIGITS[((value >> 35) & MASK_U128) as usize];
+  ans[19] = ENCODING_DIGITS[((value >> 30) & MASK_U128) as usize];
+  ans[20] = ENCODING_DIGITS[((value >> 25) & MASK_U128) as usize];
+  ans[21] = ENCODING_DIGITS[((value >> 20) & MASK_U128) as usize];
+  ans[22] = ENCODING_DIGITS[((value >> 15) & MASK_U128) as usize];
+  ans[23] = ENCODING_DIGITS[((value >> 10) & MASK_U128) as usize];
+  ans[24] = ENCODING_DIGITS[((value >> 5) & MASK_U128) as usize];
+  ans[25] = ENCODING_DIGITS[(value & MASK_U128) as usize];
   ans
 }
-//
+
 // fn append_crockford_u128(value: u128, to_append_to: &mut String) {
 //   to_append_to.push(ENCODING_DIGITS[(value >> 125) as usize]);
 //   to_append_to.push(ENCODING_DIGITS[((value >> 120) & MASK_U128) as usize]);

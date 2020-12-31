@@ -30,3 +30,6 @@ ulid-rs = "0.1.0"
 [[bench]]
 name = "bench_main"
 harness = false
+
+# [profile.release]
+# debug = true
