@@ -388,7 +388,6 @@ mod tests {
   #[test]
   fn new() {
     let ulid: ULID = (105449255778666307, 1874305465861347464).into();
-    ulid.to_string();
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648");
     let ulid: ULID = (105449255778666307, 1874305465861347465).into();
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT649");
