@@ -1,3 +1,10 @@
+// Copyright 2020 Developers of the `ulid-generator-rs` project.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 #![allow(dead_code)]
 use std::convert::TryFrom;
 use std::fmt;
@@ -15,6 +22,7 @@ pub mod uuid;
 
 type ByteArray = Vec<u8>;
 
+/// The Error of ULID
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum ULIDError {
   #[error("generate random error: msg = {msg}")]
@@ -73,6 +81,7 @@ static DECODING_DIGITS: [Option<u8>; 123] = [
   Some(29), Some(30), Some(31),
 ];
 
+#[inline]
 fn resolve_value_for_char<T>(c: char) -> Result<T, ULIDError>
 where
   T: From<u8>,
@@ -242,12 +251,16 @@ const fn append_crockford_u128(value: u128) -> [u8; 26] {
   ans
 }
 
+/// This Enum is the endian types.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Endian {
+  /// Little endian.
   LE,
+  /// Big endian.
   BE,
 }
 
+/// This struct is [ULID]
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ULID(u128);
 
@@ -258,41 +271,72 @@ impl fmt::Display for ULID {
 }
 
 impl ULID {
+  /// The Constructor for ULID.
+  ///
+  /// # Example
+  ///
+  /// [`ULID::new()`] is used to create a [ULID] instance, but usually [ULIDGenerator] is used.
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::{ULID, ULIDGenerator};
+  ///
+  /// let ulid = ULID::new(1945530789360716160560926739305506752);
+  ///
+  /// // Use `ULIDGenerator::generate` as follows
+  /// let ulid = ULIDGenerator::new().generate().unwrap();
+  /// ```
   #[must_use]
   pub fn new(value: u128) -> Self {
     Self(value)
   }
 
+  /// Converts a ULID to a string representation.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::ULIDGenerator;
+  ///
+  /// let ulid = ULIDGenerator::new().generate().unwrap();
+  /// let str = ulid.to_string();
+  /// println!("{}", str); // "01ETGRM6448X1HM0PYWG2KT648"
+  /// ```
   #[must_use]
   pub fn to_string(&self) -> String {
     String::from_utf8(append_crockford_u128(self.0).to_vec()).unwrap()
   }
 
+  /// Most significant bits.
   #[must_use]
   pub const fn most_significant_bits(&self) -> u64 {
     (self.0 >> 64) as u64
   }
 
+  /// Least significant bits.
   #[must_use]
   pub const fn least_significant_bits(&self) -> u64 {
     (self.0 & 0x0000ffff) as u64
   }
 
+  /// Converts a ULID to a epoch time as milli seconds.
   #[must_use]
   pub const fn to_epoch_milli_as_long(&self) -> i64 {
     (self.0 >> 80) as i64
   }
 
+  /// Converts a ULID to a epoch time as duration.
   #[must_use]
   pub fn to_epoch_milli_as_duration(&self) -> Duration {
     Duration::milliseconds(self.to_epoch_milli_as_long())
   }
 
+  /// Converts a ULID to a `DateTime<Local>`
   #[must_use]
   pub fn to_date_time(&self) -> DateTime<Local> {
     Local.timestamp_millis(self.to_epoch_milli_as_long())
   }
 
+  /// Converts a ULID to a Byte Array.
   #[must_use]
   pub fn to_byte_array(&self, endian: Endian) -> ByteArray {
     let mut buf = Vec::with_capacity(ULID_BYTES_LENGTH as usize);
@@ -305,6 +349,7 @@ impl ULID {
     buf
   }
 
+  /// Parse Byte Array as ULID.
   #[must_use]
   pub fn parse_from_byte_array(byte_array: ByteArray, endian: Endian) -> Result<Self, ULIDError> {
     if byte_array.len() != ULID_BYTES_LENGTH as usize {
@@ -386,6 +431,14 @@ mod tests {
   use super::*;
 
   #[test]
+  fn generate() -> Result<(), ULIDError> {
+    let now = Local::now().timestamp_millis();
+    let ulid = ULIDGenerator::new().generate()?;
+    assert!(now <= ulid.to_epoch_milli_as_long());
+    Ok(())
+  }
+
+  #[test]
   fn new() {
     let ulid: ULID = (105449255778666307, 1874305465861347464).into();
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648");
@@ -396,7 +449,7 @@ mod tests {
   }
 
   #[test]
-  fn timestamp() {
+  fn to_date_time() {
     let ulid: ULID = 1945530789360716160560926739305506752.into();
     println!("ulid = {}", ulid);
     println!("date_time = {}", ulid.to_date_time());
@@ -413,7 +466,7 @@ mod tests {
   }
 
   #[test]
-  fn parse() -> Result<(), ULIDError> {
+  fn parse_string() -> Result<(), ULIDError> {
     let s = "01ETGRM6448X1HM0PYWG2KT648";
     let ulid = s.parse::<ULID>()?;
     assert_eq!(ulid.to_string(), s);
