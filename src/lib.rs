@@ -35,15 +35,7 @@ const ULID_STRING_LENGTH: u32 = 26;
 const ULID_BYTES_LENGTH: u32 = 16;
 const TIMESTAMP_OVERFLOW_MASK: u64 = 0xffff000000000000;
 
-static ENCODING_DIGITS: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-
-// #[rustfmt::skip]
-// static ENCODING_DIGITS: [char; 32] = [
-//     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-//     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K',
-//     'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X',
-//     'Y', 'Z',
-//   ];
+const ENCODING_DIGITS: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 #[rustfmt::skip]
 static DECODING_DIGITS: [Option<u8>; 123] = [
@@ -94,6 +86,7 @@ where
   Err(ULIDError::InvalidChar(c))
 }
 
+#[inline]
 fn parse_crockford_u64_tuple(input: &str) -> Result<(u64, u64), ULIDError> {
   let length = input.len();
   if length != ULID_STRING_LENGTH as usize {
@@ -139,6 +132,7 @@ fn parse_crockford_u64_tuple(input: &str) -> Result<(u64, u64), ULIDError> {
   Ok((high, low))
 }
 
+#[inline]
 fn parse_crockford_u128(input: &str) -> Result<u128, ULIDError> {
   let length = input.len();
   if length != 26 {
@@ -181,39 +175,43 @@ fn parse_crockford_u128(input: &str) -> Result<u128, ULIDError> {
 const MASK_U64: u64 = 0b11111;
 const MASK_U128: u128 = 0b11111;
 
-// fn append_crockford_u64_tuple(value: (u64, u64), to_append_to: &mut String) {
-//   to_append_to.push(ENCODING_DIGITS[(value.0 >> 61) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 56) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 51) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 46) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 41) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 36) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 31) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 26) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 21) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 16) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 11) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 6) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.0 >> 1) & MASK_U64) as usize]);
-//
-//   let split = ((value.0 << 4) & MASK_U64) | ((value.1 >> 60) & MASK_U64);
-//   to_append_to.push(ENCODING_DIGITS[split as usize]);
-//
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 55) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 50) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 45) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 40) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 35) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 30) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 25) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 20) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 15) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 10) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value.1 >> 5) & MASK_U64) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[(value.1 & MASK_U64) as usize]);
-// }
+#[inline]
+const fn append_crockford_u64_tuple(value: (u64, u64)) -> [u8; 26] {
+  let mut ans = [0; 26];
+  ans[0] = ENCODING_DIGITS[(value.0 >> 61) as usize];
+  ans[1] = ENCODING_DIGITS[((value.0 >> 56) & MASK_U64) as usize];
+  ans[2] = ENCODING_DIGITS[((value.0 >> 51) & MASK_U64) as usize];
+  ans[3] = ENCODING_DIGITS[((value.0 >> 46) & MASK_U64) as usize];
+  ans[4] = ENCODING_DIGITS[((value.0 >> 41) & MASK_U64) as usize];
+  ans[5] = ENCODING_DIGITS[((value.0 >> 36) & MASK_U64) as usize];
+  ans[6] = ENCODING_DIGITS[((value.0 >> 31) & MASK_U64) as usize];
+  ans[7] = ENCODING_DIGITS[((value.0 >> 26) & MASK_U64) as usize];
+  ans[8] = ENCODING_DIGITS[((value.0 >> 21) & MASK_U64) as usize];
+  ans[9] = ENCODING_DIGITS[((value.0 >> 16) & MASK_U64) as usize];
+  ans[10] = ENCODING_DIGITS[((value.0 >> 11) & MASK_U64) as usize];
+  ans[11] = ENCODING_DIGITS[((value.0 >> 6) & MASK_U64) as usize];
+  ans[12] = ENCODING_DIGITS[((value.0 >> 1) & MASK_U64) as usize];
 
-fn append_crockford_u128(value: u128) -> [u8; 26] {
+  let split = ((value.0 << 4) & MASK_U64) | ((value.1 >> 60) & MASK_U64);
+  ans[13] = ENCODING_DIGITS[split as usize];
+
+  ans[14] = ENCODING_DIGITS[((value.1 >> 55) & MASK_U64) as usize];
+  ans[15] = ENCODING_DIGITS[((value.1 >> 50) & MASK_U64) as usize];
+  ans[16] = ENCODING_DIGITS[((value.1 >> 45) & MASK_U64) as usize];
+  ans[17] = ENCODING_DIGITS[((value.1 >> 40) & MASK_U64) as usize];
+  ans[18] = ENCODING_DIGITS[((value.1 >> 35) & MASK_U64) as usize];
+  ans[19] = ENCODING_DIGITS[((value.1 >> 30) & MASK_U64) as usize];
+  ans[20] = ENCODING_DIGITS[((value.1 >> 25) & MASK_U64) as usize];
+  ans[21] = ENCODING_DIGITS[((value.1 >> 20) & MASK_U64) as usize];
+  ans[22] = ENCODING_DIGITS[((value.1 >> 15) & MASK_U64) as usize];
+  ans[23] = ENCODING_DIGITS[((value.1 >> 10) & MASK_U64) as usize];
+  ans[24] = ENCODING_DIGITS[((value.1 >> 5) & MASK_U64) as usize];
+  ans[25] = ENCODING_DIGITS[(value.1 & MASK_U64) as usize];
+  ans
+}
+
+#[inline]
+const fn append_crockford_u128(value: u128) -> [u8; 26] {
   let mut ans = [0; 26];
   ans[0] = ENCODING_DIGITS[(value >> 125) as usize];
   ans[1] = ENCODING_DIGITS[((value >> 120) & MASK_U128) as usize];
@@ -244,35 +242,6 @@ fn append_crockford_u128(value: u128) -> [u8; 26] {
   ans
 }
 
-// fn append_crockford_u128(value: u128, to_append_to: &mut String) {
-//   to_append_to.push(ENCODING_DIGITS[(value >> 125) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 120) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 115) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 110) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 105) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 100) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 95) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 90) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 85) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 80) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 75) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 70) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 65) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 60) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 55) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 50) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 45) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 40) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 35) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 30) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 25) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 20) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 15) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 10) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[((value >> 5) & MASK_U128) as usize]);
-//   to_append_to.push(ENCODING_DIGITS[(value & MASK_U128) as usize]);
-// }
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Endian {
   LE,
@@ -284,36 +253,47 @@ pub struct ULID(u128);
 
 impl fmt::Display for ULID {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let result = String::from_utf8(append_crockford_u128(self.0).to_vec()).unwrap();
-    f.write_str(&result)
+    f.write_str(&self.to_string())
   }
 }
 
 impl ULID {
+  #[must_use]
   pub fn new(value: u128) -> Self {
     Self(value)
   }
 
+  #[must_use]
+  pub fn to_string(&self) -> String {
+    String::from_utf8(append_crockford_u128(self.0).to_vec()).unwrap()
+  }
+
+  #[must_use]
   pub const fn most_significant_bits(&self) -> u64 {
     (self.0 >> 64) as u64
   }
 
+  #[must_use]
   pub const fn least_significant_bits(&self) -> u64 {
     (self.0 & 0x0000ffff) as u64
   }
 
+  #[must_use]
   pub const fn to_epoch_milli_as_long(&self) -> i64 {
     (self.0 >> 80) as i64
   }
 
+  #[must_use]
   pub fn to_epoch_milli_as_duration(&self) -> Duration {
     Duration::milliseconds(self.to_epoch_milli_as_long())
   }
 
+  #[must_use]
   pub fn to_date_time(&self) -> DateTime<Local> {
     Local.timestamp_millis(self.to_epoch_milli_as_long())
   }
 
+  #[must_use]
   pub fn to_byte_array(&self, endian: Endian) -> ByteArray {
     let mut buf = Vec::with_capacity(ULID_BYTES_LENGTH as usize);
     buf.resize(ULID_BYTES_LENGTH as usize, 0);
@@ -325,6 +305,7 @@ impl ULID {
     buf
   }
 
+  #[must_use]
   pub fn parse_from_byte_array(byte_array: ByteArray, endian: Endian) -> Result<Self, ULIDError> {
     if byte_array.len() != ULID_BYTES_LENGTH as usize {
       Err(ULIDError::InvalidByteArrayError)
@@ -380,12 +361,14 @@ impl TryFrom<ByteArray> for ULID {
 }
 
 impl ULIDGenerator {
+  #[must_use]
   pub fn new() -> Self {
     Self {
       rng: rand::thread_rng(),
     }
   }
 
+  #[must_use]
   pub fn generate(&mut self) -> Result<ULID, ULIDError> {
     let timestamp = Utc::now().timestamp_millis() as u64;
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
@@ -405,6 +388,7 @@ mod tests {
   #[test]
   fn new() {
     let ulid: ULID = (105449255778666307, 1874305465861347464).into();
+    ulid.to_string();
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648");
     let ulid: ULID = (105449255778666307, 1874305465861347465).into();
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT649");
@@ -431,8 +415,9 @@ mod tests {
 
   #[test]
   fn parse() -> Result<(), ULIDError> {
-    let ulid = "01ETGRM6448X1HM0PYWG2KT648".parse::<ULID>()?;
-    assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT648");
+    let s = "01ETGRM6448X1HM0PYWG2KT648";
+    let ulid = s.parse::<ULID>()?;
+    assert_eq!(ulid.to_string(), s);
     Ok(())
   }
 }
