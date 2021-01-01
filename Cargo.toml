@@ -1,7 +1,7 @@
 [package]
 name = "ulid-generator-rs"
 version = "0.0.1"
-description = "ULID generation and processing library for Rust"
+description = "A Rust crate for generating ULIDs"
 authors = ["Junichi Kato <j5ik2o@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"

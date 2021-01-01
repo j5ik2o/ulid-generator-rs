@@ -1,7 +1,9 @@
-# ulid-rs
+# ulid-generator-rs
+
+This is a Rust crate for generating ULIDs.
 
 ## Alternative crates
 
-- https://github.com/dylanhart/ulid-rs (53 stars)
-- https://github.com/huxi/rusty_ulid (10 stars)
-- https://github.com/suyash/ulid-rs (1 stars)
+- https://github.com/dylanhart/ulid-rs
+- https://github.com/huxi/rusty_ulid
+- https://github.com/suyash/ulid-rs
