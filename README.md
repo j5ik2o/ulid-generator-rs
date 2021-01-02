@@ -2,6 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/ulid-generator-rs.svg)](https://crates.io/crates/ulid-generator-rs)
 
+This is a Rust crate for generating ULIDs.
 
 # Usage
 
@@ -11,8 +12,6 @@ Add this to your Cargo.toml:
 [dependencies]
 ulid-generator-rs = "0.0.1"
 ```
-
-This is a Rust crate for generating ULIDs.
 
 ## Alternative crates
 
