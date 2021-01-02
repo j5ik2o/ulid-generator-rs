@@ -292,6 +292,9 @@ impl fmt::Display for ULID {
   }
 }
 
+const RANDOM_MSB_MASK: u64 = 0xffff;
+const TIMESTAMP_MSB_MASK: u64 = 0xffffffffffff0000;
+
 /// implements for [ULID].
 impl ULID {
   /// The Constructor for [ULID].
@@ -329,6 +332,19 @@ impl ULID {
   #[must_use]
   pub fn to_string(&self) -> String {
     String::from_utf8(append_crockford_u128(self.0).to_vec()).unwrap()
+  }
+
+  pub fn increment(&self) -> Self {
+    let lsb = self.least_significant_bits();
+    if lsb != 0xffffffffffffffff {
+      ULID::from((self.most_significant_bits(), lsb + 1))
+    } else {
+      if (self.most_significant_bits() & RANDOM_MSB_MASK) != RANDOM_MSB_MASK {
+        ULID::from((self.most_significant_bits() + 1, 0))
+      } else {
+        ULID::from((self.most_significant_bits() & TIMESTAMP_MSB_MASK, 0))
+      }
+    }
   }
 
   /// Most significant bits.
@@ -514,6 +530,19 @@ impl ULIDGenerator {
     }
   }
 
+  fn internal_generate<F>(&mut self, time_stamp_f: F) -> Result<ULID, ULIDError>
+  where
+    F: Fn() -> u64, {
+    let timestamp = time_stamp_f();
+    if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
+      Err(ULIDError::TimestampOverflowError)
+    } else {
+      let (most_rnd, least_significant_bits): (u16, u64) = self.rng.gen();
+      let most_significant_bits = timestamp << 16 | u64::from(most_rnd);
+      Ok(ULID::from((most_significant_bits, least_significant_bits)))
+    }
+  }
+
   /// Generate a [ULID]
   ///
   /// Generate a [ULID] based on the current time.
@@ -527,13 +556,15 @@ impl ULIDGenerator {
   /// let ulid = generator.generate().unwrap();
   /// ```
   pub fn generate(&mut self) -> Result<ULID, ULIDError> {
-    let timestamp = Utc::now().timestamp_millis() as u64;
-    if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
-      Err(ULIDError::TimestampOverflowError)
+    self.internal_generate(|| Utc::now().timestamp_millis() as u64)
+  }
+
+  pub fn generate_monotonic(&mut self, previous_id: ULID) -> Result<ULID, ULIDError> {
+    let timestamp = Utc::now().timestamp_millis();
+    if previous_id.to_epoch_milli_as_long() == timestamp {
+      Ok(previous_id.increment())
     } else {
-      let (most_rnd, least_significant_bits): (u16, u64) = self.rng.gen();
-      let most_significant_bits = timestamp << 16 | u64::from(most_rnd);
-      Ok(ULID::from((most_significant_bits, least_significant_bits)))
+      self.internal_generate(|| timestamp as u64)
     }
   }
 }
