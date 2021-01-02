@@ -11,7 +11,7 @@
 //! ULID is Universally Unique Lexicographically Sortable Identifier.
 //!
 //! For more information, please check the following specifications.
-//! [ULID Spec](https://github.com/ulid/spec)
+//! - [ULID Spec](https://github.com/ulid/spec)
 //!
 //! # Usage
 //!
