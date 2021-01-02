@@ -6,7 +6,7 @@ A Rust crate for generating ULIDs.
 [![docs.rs](https://docs.rs/ulid-generator-rs/badge.svg)](https://docs.rs/ulid-generator-rs)
 [![Workflow Status](https://github.com/j5ik2o/ulid-generator-rs/workflows/Rust/badge.svg)](https://github.com/j5ik2o/ulid-generator-rs/actions?query=workflow%3A%22Rust%22)
 
-## Usage
+## Install to Cargo.toml
 
 Add this to your `Cargo.toml`:
 
@@ -21,6 +21,15 @@ ULID is Universally Unique Lexicographically Sortable Identifier.
 
 For more information, please check the following specifications.
 [ULID Spec](https://github.com/ulid/spec)
+
+## Usage
+
+```rust
+use ulid_generator_rs::{ULIDGenerator, ULID};
+
+let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+let str: String = ulid.to_string();
+```
 
 ## Alternative crates
 
