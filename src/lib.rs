@@ -10,7 +10,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
-use chrono::{DateTime, Duration, Local, TimeZone, Utc};
+use chrono::{DateTime, Local, TimeZone, Utc};
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use thiserror::Error;
@@ -22,7 +22,7 @@ pub mod uuid;
 
 type ByteArray = Vec<u8>;
 
-/// The Error of ULID
+/// The Errors of ULID
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum ULIDError {
   #[error("generate random error: msg = {msg}")]
@@ -280,38 +280,14 @@ impl ULID {
   /// ```rust
   /// use ulid_generator_rs::{ULID, ULIDGenerator};
   ///
-  /// let ulid = ULID::new(1945530789360716160560926739305506752);
+  /// let ulid: ULID = ULID::new(1945530789360716160560926739305506752);
   ///
   /// // Use `ULIDGenerator::generate` as follows
-  /// let ulid = ULIDGenerator::new().generate().unwrap();
+  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
   /// ```
   #[must_use]
   pub fn new(value: u128) -> Self {
     Self(value)
-  }
-
-  /// Most significant bits.
-  #[must_use]
-  pub const fn most_significant_bits(&self) -> u64 {
-    (self.0 >> 64) as u64
-  }
-
-  /// Least significant bits.
-  #[must_use]
-  pub const fn least_significant_bits(&self) -> u64 {
-    (self.0 & 0x0000ffff) as u64
-  }
-
-  /// Converts a ULID to a epoch time as milli seconds.
-  #[must_use]
-  pub const fn to_epoch_milli_as_long(&self) -> i64 {
-    (self.0 >> 80) as i64
-  }
-
-  /// Converts a ULID to a epoch time as duration.
-  #[must_use]
-  pub fn to_epoch_milli_as_duration(&self) -> Duration {
-    Duration::milliseconds(self.to_epoch_milli_as_long())
   }
 
   /// Converts a ULID to a string representation.
@@ -332,13 +308,79 @@ impl ULID {
     String::from_utf8(append_crockford_u128(self.0).to_vec()).unwrap()
   }
 
-  /// Converts a ULID to a `DateTime<Local>`
+  /// Most significant bits.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::{ULIDGenerator, ULID};
+  ///
+  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let m: u64 = ulid.most_significant_bits();
+  /// ```
+  #[must_use]
+  pub const fn most_significant_bits(&self) -> u64 {
+    (self.0 >> 64) as u64
+  }
+
+  /// Least significant bits.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::{ULIDGenerator, ULID};
+  ///
+  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let l: u64 = ulid.least_significant_bits();
+  /// ```
+  #[must_use]
+  pub const fn least_significant_bits(&self) -> u64 {
+    (self.0 & 0x0000ffff) as u64
+  }
+
+  /// Converts a ULID to a epoch time as milli seconds.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::{ULIDGenerator, ULID};
+  ///
+  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let epoch: i64 = ulid.to_epoch_milli_as_long();
+  /// ```
+  #[must_use]
+  pub const fn to_epoch_milli_as_long(&self) -> i64 {
+    (self.0 >> 80) as i64
+  }
+
+  /// Converts a [ULID] to a [`DateTime<Local>`]
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::{ULIDGenerator, ULID};
+  /// use chrono::{Local, DateTime};
+  ///
+  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let date_time: DateTime<Local> = ulid.to_date_time();
+  /// ```
   #[must_use]
   pub fn to_date_time(&self) -> DateTime<Local> {
     Local.timestamp_millis(self.to_epoch_milli_as_long())
   }
 
-  /// Converts a ULID to a Byte Array.
+  /// Converts a [ULID] to a byte array.
+  ///
+  /// `endian` a [Endian] of byte array
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::{ULIDGenerator, ULID, Endian};
+  ///
+  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let ba: ByteArray = ulid.to_byte_array(Endian.BE);
+  /// ```
   #[must_use]
   pub fn to_byte_array(&self, endian: Endian) -> ByteArray {
     let mut buf = vec![0; ULID_BYTES_LENGTH as usize];
@@ -350,7 +392,20 @@ impl ULID {
     buf
   }
 
-  /// Parse Byte Array as ULID.
+  /// Parse a byte array as [ULID].
+  ///
+  /// `byte_array` a byte array as [ULID].
+  /// `endian` a [Endian] of `byte_array`.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::{ULIDGenerator, ULID, Endian};
+  ///
+  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let ba: ByteArray = ulid.to_byte_array(Endian.BE);
+  /// let ulid: ULID = ULID::parse_from_byte_array(ba, Endian.BE).unwrap();
+  /// ```
   pub fn parse_from_byte_array(byte_array: ByteArray, endian: Endian) -> Result<Self, ULIDError> {
     if byte_array.len() != ULID_BYTES_LENGTH as usize {
       Err(ULIDError::InvalidByteArrayError)
@@ -370,17 +425,12 @@ impl ULID {
   }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct ULIDGenerator {
-  rng: ThreadRng,
-}
-
 impl FromStr for ULID {
   type Err = ULIDError;
 
   fn from_str(ulid_str: &str) -> Result<Self, Self::Err> {
     let value = parse_crockford_u128(ulid_str)?;
-    Ok(Self::new(value))
+    Ok(Self(value))
   }
 }
 
@@ -393,7 +443,7 @@ impl From<u128> for ULID {
 impl From<(u64, u64)> for ULID {
   fn from((most_significant_bits, least_significant_bits): (u64, u64)) -> Self {
     let value: u128 = (most_significant_bits as u128) << 64 | least_significant_bits as u128;
-    Self::new(value)
+    Self(value)
   }
 }
 
@@ -405,13 +455,14 @@ impl TryFrom<ByteArray> for ULID {
   }
 }
 
-impl Default for ULIDGenerator {
-  fn default() -> Self {
-    ULIDGenerator::new()
-  }
+/// This is the ULID Generator.
+#[derive(Copy, Clone, Debug)]
+pub struct ULIDGenerator {
+  rng: ThreadRng,
 }
 
 impl ULIDGenerator {
+  /// The Constructor for [ULIDGenerator].
   #[must_use]
   pub fn new() -> Self {
     Self {
@@ -419,6 +470,17 @@ impl ULIDGenerator {
     }
   }
 
+  /// Generate a [ULID]
+  ///
+  ///　Generate a ULID based on the current time.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::ULIDGenerator;
+  /// let mut generator = ULIDGenerator::new();
+  /// let ulid = generator.generate().unwrap();
+  /// ```
   pub fn generate(&mut self) -> Result<ULID, ULIDError> {
     let timestamp = Utc::now().timestamp_millis() as u64;
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
@@ -428,6 +490,12 @@ impl ULIDGenerator {
       let most_significant_bits = timestamp << 16 | u64::from(most_rnd);
       Ok(ULID::from((most_significant_bits, least_significant_bits)))
     }
+  }
+}
+
+impl Default for ULIDGenerator {
+  fn default() -> Self {
+    ULIDGenerator::new()
   }
 }
 
