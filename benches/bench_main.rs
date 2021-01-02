@@ -103,18 +103,14 @@ fn criterion_benchmark(c: &mut Criterion) {
   //   b.iter(|| j5ik2o_ulid_to_string(&ulid))
   // });
   // let ulid = ulid::Ulid::new();
-  // group.bench_with_input(
-  //   BenchmarkId::new("dylanhart/ulid-rs/str", op),
-  //   &op,
-  //   |b, i| b.iter(|| dylanhart_ulid_rs_to_string(&ulid)),
-  // );
+  // group.bench_with_input(BenchmarkId::new("dylanhart/ulid-rs/str", op), &op, |b, i| {
+  //   b.iter(|| dylanhart_ulid_rs_to_string(&ulid))
+  // });
   // let ulid = rusty_ulid::Ulid::generate();
   // group.bench_with_input(BenchmarkId::new("huxi/rusty_ulid/str", op), &op, |b, i| {
   //   b.iter(|| huxi_rusty_ulid_to_string(&ulid))
   // });
-  // let ulid = ulid_rs::Ulid::new(Utc::now().timestamp_millis() as u64, || {
-  //   rand::thread_rng().gen::<u8>()
-  // });
+  // let ulid = ulid_rs::Ulid::new(Utc::now().timestamp_millis() as u64, || rand::thread_rng().gen::<u8>());
   // group.bench_with_input(BenchmarkId::new("suyash/ulid-rs/str", op), &op, |b, i| {
   //   b.iter(|| suyash_ulid_rs_to_string(&ulid))
   // });

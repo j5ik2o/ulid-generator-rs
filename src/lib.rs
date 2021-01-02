@@ -327,7 +327,7 @@ impl ULID {
   #[allow(clippy::unknown_clippy_lints)]
   #[allow(clippy::inherent_to_string_shadow_display)]
   #[must_use]
-  fn to_string(&self) -> String {
+  pub fn to_string(&self) -> String {
     String::from_utf8(append_crockford_u128(self.0).to_vec()).unwrap()
   }
 
