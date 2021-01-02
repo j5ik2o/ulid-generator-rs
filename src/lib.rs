@@ -13,6 +13,15 @@
 //! For more information, please check the following specifications.
 //! [ULID Spec](https://github.com/ulid/spec)
 //!
+//! # Usage
+//!
+//! ```rust
+//! use ulid_generator_rs::{ULIDGenerator, ULID};
+//!
+//! let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+//! let str: String = ulid.to_string();
+//! ```
+//!
 //! # Alternative crates
 //!
 //! - https://github.com/dylanhart/ulid-rs

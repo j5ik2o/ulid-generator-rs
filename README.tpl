@@ -6,7 +6,7 @@ A Rust crate for generating ULIDs.
 [![docs.rs](https://docs.rs/ulid-generator-rs/badge.svg)](https://docs.rs/ulid-generator-rs)
 {{badges}}
 
-## Usage
+## Install to Cargo.toml
 
 Add this to your `Cargo.toml`:
 
