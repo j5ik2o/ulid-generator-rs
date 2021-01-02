@@ -6,10 +6,20 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! `ulid-generator-rs` module.
+//! # About ULID
 //!
+//! ULID is Universally Unique Lexicographically Sortable Identifier.
+//!
+//! For more information, please check the following specifications.
 //! [ULID Spec](https://github.com/ulid/spec)
+//!
+//! # Alternative crates
+//!
+//! - https://github.com/dylanhart/ulid-rs
+//! - https://github.com/huxi/rusty_ulid
+//! - https://github.com/suyash/ulid-rs
 #![allow(dead_code)]
+
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;

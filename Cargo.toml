@@ -10,6 +10,9 @@ categories = ["data-structures","date-and-time","encoding","parsing","value-form
 readme = "README.md"
 repository = "https://github.com/j5ik2o/ulid-generator-rs"
 
+[badges]
+github = { repository = "j5ik2o/ulid-generator-rs", workflow = "Rust" }
+
 [dependencies]
 rand = { version = "0.7.3" }
 chrono = { version = "0.4"}
