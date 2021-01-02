@@ -337,7 +337,7 @@ impl ULID {
   /// ```
   #[must_use]
   pub const fn least_significant_bits(&self) -> u64 {
-    (self.0 & 0x0000ffff) as u64
+    self.0 as u64
   }
 
   /// Converts a [ULID] to a epoch time as milli seconds.
@@ -520,6 +520,13 @@ mod tests {
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT649");
     let ulid: ULID = (105449255778666307, 1874305465861347465).into();
     assert_eq!(ulid.to_string(), "01ETGRM6448X1HM0PYWG2KT649");
+  }
+
+  #[test]
+  fn significant_bits() {
+    let ulid: ULID = (105449255778666307, 1874305465861347464).into();
+    assert_eq!(ulid.most_significant_bits(), 105449255778666307);
+    assert_eq!(ulid.least_significant_bits(), 1874305465861347464);
   }
 
   #[test]
