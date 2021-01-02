@@ -290,22 +290,6 @@ impl ULID {
     Self(value)
   }
 
-  /// Converts a ULID to a string representation.
-  ///
-  /// # Example
-  ///
-  /// ```rust
-  /// use ulid_generator_rs::ULIDGenerator;
-  ///
-  /// let ulid = ULIDGenerator::new().generate().unwrap();
-  /// let str = ulid.to_string();
-  /// println!("{}", str); // "01ETGRM6448X1HM0PYWG2KT648"
-  /// ```
-  #[must_use]
-  pub fn to_string(&self) -> String {
-    String::from_utf8(append_crockford_u128(self.0).to_vec()).unwrap()
-  }
-
   /// Most significant bits.
   #[must_use]
   pub const fn most_significant_bits(&self) -> u64 {
@@ -330,6 +314,24 @@ impl ULID {
     Duration::milliseconds(self.to_epoch_milli_as_long())
   }
 
+  /// Converts a ULID to a string representation.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use ulid_generator_rs::ULIDGenerator;
+  ///
+  /// let ulid = ULIDGenerator::new().generate().unwrap();
+  /// let str = ulid.to_string();
+  /// println!("{}", str); // "01ETGRM6448X1HM0PYWG2KT648"
+  /// ```
+  #[allow(clippy::unknown_clippy_lints)]
+  #[allow(clippy::inherent_to_string_shadow_display)]
+  #[must_use]
+  fn to_string(&self) -> String {
+    String::from_utf8(append_crockford_u128(self.0).to_vec()).unwrap()
+  }
+
   /// Converts a ULID to a `DateTime<Local>`
   #[must_use]
   pub fn to_date_time(&self) -> DateTime<Local> {
@@ -339,8 +341,7 @@ impl ULID {
   /// Converts a ULID to a Byte Array.
   #[must_use]
   pub fn to_byte_array(&self, endian: Endian) -> ByteArray {
-    let mut buf = Vec::with_capacity(ULID_BYTES_LENGTH as usize);
-    buf.resize(ULID_BYTES_LENGTH as usize, 0);
+    let mut buf = vec![0; ULID_BYTES_LENGTH as usize];
     let bytes = match endian {
       Endian::LE => self.0.to_le_bytes(),
       Endian::BE => self.0.to_be_bytes(),
@@ -350,7 +351,6 @@ impl ULID {
   }
 
   /// Parse Byte Array as ULID.
-  #[must_use]
   pub fn parse_from_byte_array(byte_array: ByteArray, endian: Endian) -> Result<Self, ULIDError> {
     if byte_array.len() != ULID_BYTES_LENGTH as usize {
       Err(ULIDError::InvalidByteArrayError)
@@ -358,12 +358,12 @@ impl ULID {
       let result = if endian == Endian::BE {
         byte_array
           .iter()
-          .fold(0u128, |result, e| (result << 8) | (*e & 0xff) as u128)
+          .fold(0u128, |result, e| (result << 8) | *e as u128)
       } else {
         byte_array
           .iter()
           .rev()
-          .fold(0u128, |result, e| (result << 8) | (*e & 0xff) as u128)
+          .fold(0u128, |result, e| (result << 8) | *e as u128)
       };
       Ok(Self(result))
     }
@@ -405,6 +405,12 @@ impl TryFrom<ByteArray> for ULID {
   }
 }
 
+impl Default for ULIDGenerator {
+  fn default() -> Self {
+    ULIDGenerator::new()
+  }
+}
+
 impl ULIDGenerator {
   #[must_use]
   pub fn new() -> Self {
@@ -413,7 +419,6 @@ impl ULIDGenerator {
     }
   }
 
-  #[must_use]
   pub fn generate(&mut self) -> Result<ULID, ULIDError> {
     let timestamp = Utc::now().timestamp_millis() as u64;
     if (timestamp & TIMESTAMP_OVERFLOW_MASK) != 0 {
