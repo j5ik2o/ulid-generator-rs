@@ -7,6 +7,8 @@
 // except according to those terms.
 
 //! `ulid-generator-rs` module.
+//!
+//! [ULID Spec](https://github.com/ulid/spec)
 #![allow(dead_code)]
 use std::convert::TryFrom;
 use std::fmt;
@@ -381,7 +383,7 @@ impl ULID {
   /// use ulid_generator_rs::{ULIDGenerator, ULID, Endian};
   ///
   /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
-  /// let ba: ByteArray = ulid.to_byte_array(Endian.BE);
+  /// let ba: Vec<u8> = ulid.to_byte_array(Endian::BE);
   /// ```
   #[must_use]
   pub fn to_byte_array(&self, endian: Endian) -> ByteArray {
@@ -405,8 +407,8 @@ impl ULID {
   /// use ulid_generator_rs::{ULIDGenerator, ULID, Endian};
   ///
   /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
-  /// let ba: ByteArray = ulid.to_byte_array(Endian.BE);
-  /// let ulid: ULID = ULID::parse_from_byte_array(ba, Endian.BE).unwrap();
+  /// let ba: Vec<u8> = ulid.to_byte_array(Endian::BE);
+  /// let ulid: ULID = ULID::parse_from_byte_array(ba, Endian::BE).unwrap();
   /// ```
   pub fn parse_from_byte_array(byte_array: ByteArray, endian: Endian) -> Result<Self, ULIDError> {
     if byte_array.len() != ULID_BYTES_LENGTH as usize {
@@ -428,6 +430,11 @@ impl ULID {
 impl FromStr for ULID {
   type Err = ULIDError;
 
+  /// ```rust
+  /// use ulid_generator_rs::ULID;
+  ///
+  /// let ulid: ULID = "01ETGRM6448X1HM0PYWG2KT648".parse::<ULID>().unwrap();
+  /// ```
   fn from_str(ulid_str: &str) -> Result<Self, Self::Err> {
     let value = parse_crockford_u128(ulid_str)?;
     Ok(Self(value))
@@ -435,12 +442,22 @@ impl FromStr for ULID {
 }
 
 impl From<u128> for ULID {
+  /// ```rust
+  /// use ulid_generator_rs::ULID;
+  ///
+  /// let ulid: ULID = 1945530789360716160560926739305506752.into();
+  /// ```
   fn from(value: u128) -> Self {
     Self::new(value)
   }
 }
 
 impl From<(u64, u64)> for ULID {
+  /// ```rust
+  /// use ulid_generator_rs::ULID;
+  ///
+  /// let ulid: ULID = (105449255778666307, 1874305465861347464).into();
+  /// ```
   fn from((most_significant_bits, least_significant_bits): (u64, u64)) -> Self {
     let value: u128 = (most_significant_bits as u128) << 64 | least_significant_bits as u128;
     Self(value)
@@ -450,6 +467,14 @@ impl From<(u64, u64)> for ULID {
 impl TryFrom<ByteArray> for ULID {
   type Error = ULIDError;
 
+  /// ```rust
+  /// use ulid_generator_rs::{ULID, Endian};
+  /// use std::convert::TryInto;
+  ///
+  /// let ulid: ULID = 1945530789360716160560926739305506752.into();
+  /// let bytes: Vec<u8> = ulid.to_byte_array(Endian::BE);
+  /// let ulid: ULID = bytes.try_into().unwrap();
+  /// ```
   fn try_from(value: ByteArray) -> Result<Self, Self::Error> {
     Self::parse_from_byte_array(value, Endian::BE)
   }
@@ -503,6 +528,7 @@ impl Default for ULIDGenerator {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::convert::TryInto;
 
   #[test]
   fn generate() -> Result<(), ULIDError> {
@@ -527,6 +553,7 @@ mod tests {
     let ulid: ULID = (105449255778666307, 1874305465861347464).into();
     assert_eq!(ulid.most_significant_bits(), 105449255778666307);
     assert_eq!(ulid.least_significant_bits(), 1874305465861347464);
+    println!("ulid = {}", ulid);
   }
 
   #[test]
@@ -540,7 +567,8 @@ mod tests {
   fn bytes() -> Result<(), ULIDError> {
     let ulid_expected: ULID = ULIDGenerator::new().generate()?;
     let bytes: ByteArray = ulid_expected.to_byte_array(Endian::BE);
-    let ulid: ULID = ULID::parse_from_byte_array(bytes, Endian::BE)?;
+    let _ulid: ULID = ULID::parse_from_byte_array(bytes.clone(), Endian::BE)?;
+    let ulid: ULID = bytes.try_into()?;
     println!("ulid = {}", ulid);
     assert_eq!(ulid, ulid_expected);
     Ok(())

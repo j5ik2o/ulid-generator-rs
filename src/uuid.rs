@@ -20,3 +20,17 @@ impl From<ULID> for Uuid {
     Uuid::from_u128(ulid.0)
   }
 }
+
+#[cfg(test)]
+mod test {
+  use crate::ULID;
+  use uuid::Uuid;
+
+  #[test]
+  fn uuid() {
+    let uuid_expected: Uuid = Uuid::new_v4();
+    let ulid: ULID = uuid_expected.into();
+    let uuid: Uuid = ulid.into();
+    assert_eq!(uuid, uuid_expected);
+  }
+}
