@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use uuid::Uuid;
 use crate::ULID;
+use uuid::Uuid;
 
 impl From<Uuid> for ULID {
   fn from(uuid: Uuid) -> Self {

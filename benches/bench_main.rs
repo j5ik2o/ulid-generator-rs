@@ -66,9 +66,7 @@ fn huxi_rusty_ulid_gen_to_string() {
 /// suyash/ulid-rs
 #[inline]
 fn suyash_ulid_rs_gen_ulid() {
-  ulid_rs::Ulid::new(Utc::now().timestamp_millis() as u64, || {
-    rand::thread_rng().gen::<u8>()
-  });
+  ulid_rs::Ulid::new(Utc::now().timestamp_millis() as u64, || rand::thread_rng().gen::<u8>());
 }
 
 #[inline]
@@ -78,10 +76,7 @@ fn suyash_ulid_rs_to_string(ulid: &ulid_rs::Ulid) {
 
 #[inline]
 fn suyash_ulid_rs_gen_to_string() {
-  ulid_rs::Ulid::new(Utc::now().timestamp_millis() as u64, || {
-    rand::thread_rng().gen::<u8>()
-  })
-  .to_string();
+  ulid_rs::Ulid::new(Utc::now().timestamp_millis() as u64, || rand::thread_rng().gen::<u8>()).to_string();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -124,26 +119,18 @@ fn criterion_benchmark(c: &mut Criterion) {
   //   b.iter(|| suyash_ulid_rs_to_string(&ulid))
   // });
   // ---
-  group.bench_with_input(
-    BenchmarkId::new("j5ik2o/ulid-rs/gen_to_str", op),
-    &op,
-    |b, i| b.iter(|| j5ik2o_ulid_gen_to_string(&mut gen)),
-  );
-  group.bench_with_input(
-    BenchmarkId::new("dylanhart/ulid-rs/gen_to_str", op),
-    &op,
-    |b, i| b.iter(|| dylanhart_ulid_rs_gen_to_string()),
-  );
-  group.bench_with_input(
-    BenchmarkId::new("huxi/rusty_ulid/gen_to_str", op),
-    &op,
-    |b, i| b.iter(|| huxi_rusty_ulid_gen_to_string()),
-  );
-  group.bench_with_input(
-    BenchmarkId::new("suyash/ulid-rs/gen_to_str", op),
-    &op,
-    |b, i| b.iter(|| suyash_ulid_rs_gen_to_string()),
-  );
+  group.bench_with_input(BenchmarkId::new("j5ik2o/ulid-rs/gen_to_str", op), &op, |b, i| {
+    b.iter(|| j5ik2o_ulid_gen_to_string(&mut gen))
+  });
+  group.bench_with_input(BenchmarkId::new("dylanhart/ulid-rs/gen_to_str", op), &op, |b, i| {
+    b.iter(|| dylanhart_ulid_rs_gen_to_string())
+  });
+  group.bench_with_input(BenchmarkId::new("huxi/rusty_ulid/gen_to_str", op), &op, |b, i| {
+    b.iter(|| huxi_rusty_ulid_gen_to_string())
+  });
+  group.bench_with_input(BenchmarkId::new("suyash/ulid-rs/gen_to_str", op), &op, |b, i| {
+    b.iter(|| suyash_ulid_rs_gen_to_string())
+  });
   group.finish();
 }
 

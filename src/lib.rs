@@ -5,14 +5,16 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+
+//! `ulid-generator-rs` module.
 #![allow(dead_code)]
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
 use chrono::{DateTime, Local, TimeZone, Utc};
-use rand::Rng;
 use rand::rngs::ThreadRng;
+use rand::Rng;
 use thiserror::Error;
 
 #[cfg(feature = "serde")]
@@ -22,7 +24,7 @@ pub mod uuid;
 
 type ByteArray = Vec<u8>;
 
-/// The Errors of ULID
+/// The error types of [ULID]
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum ULIDError {
   #[error("generate random error: msg = {msg}")]
@@ -84,8 +86,7 @@ static DECODING_DIGITS: [Option<u8>; 123] = [
 #[inline]
 fn resolve_value_for_char<T>(c: char) -> Result<T, ULIDError>
 where
-  T: From<u8>,
-{
+  T: From<u8>, {
   let index = c as usize;
   if index < DECODING_DIGITS.len() {
     if let Some(u8_value) = DECODING_DIGITS[index] {
@@ -251,7 +252,7 @@ const fn append_crockford_u128(value: u128) -> [u8; 26] {
   ans
 }
 
-/// This Enum is the endian types.
+/// This enum is the endian types.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Endian {
   /// Little endian.
@@ -260,7 +261,7 @@ pub enum Endian {
   BE,
 }
 
-/// This struct is [ULID]
+/// This struct is [ULID].
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ULID(u128);
 
@@ -270,8 +271,9 @@ impl fmt::Display for ULID {
   }
 }
 
+/// implements for [ULID].
 impl ULID {
-  /// The Constructor for ULID.
+  /// The Constructor for [ULID].
   ///
   /// # Example
   ///
@@ -290,7 +292,7 @@ impl ULID {
     Self(value)
   }
 
-  /// Converts a ULID to a string representation.
+  /// Converts a [ULID] to a string representation.
   ///
   /// # Example
   ///
@@ -338,7 +340,7 @@ impl ULID {
     (self.0 & 0x0000ffff) as u64
   }
 
-  /// Converts a ULID to a epoch time as milli seconds.
+  /// Converts a [ULID] to a epoch time as milli seconds.
   ///
   /// # Example
   ///
@@ -411,9 +413,7 @@ impl ULID {
       Err(ULIDError::InvalidByteArrayError)
     } else {
       let result = if endian == Endian::BE {
-        byte_array
-          .iter()
-          .fold(0u128, |result, e| (result << 8) | *e as u128)
+        byte_array.iter().fold(0u128, |result, e| (result << 8) | *e as u128)
       } else {
         byte_array
           .iter()
@@ -455,7 +455,7 @@ impl TryFrom<ByteArray> for ULID {
   }
 }
 
-/// This is the ULID Generator.
+/// This is the [ULID] Generator.
 #[derive(Copy, Clone, Debug)]
 pub struct ULIDGenerator {
   rng: ThreadRng,
@@ -472,12 +472,13 @@ impl ULIDGenerator {
 
   /// Generate a [ULID]
   ///
-  ///　Generate a ULID based on the current time.
+  /// Generate a [ULID] based on the current time.
   ///
   /// # Example
   ///
   /// ```rust
   /// use ulid_generator_rs::ULIDGenerator;
+  ///
   /// let mut generator = ULIDGenerator::new();
   /// let ulid = generator.generate().unwrap();
   /// ```
