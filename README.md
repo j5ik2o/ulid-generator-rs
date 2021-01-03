@@ -27,8 +27,10 @@ For more information, please check the following specifications.
 ```rust
 use ulid_generator_rs::{ULIDGenerator, ULID};
 
-let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+let mut generator: ULIDGenerator = ULIDGenerator::new();
+let ulid: ULID = generator.generate().unwrap();
 let str: String = ulid.to_string();
+println!("{}", str); // "01ETGRM6448X1HM0PYWG2KT648"
 ```
 
 ## Alternative crates
@@ -40,7 +42,7 @@ let str: String = ulid.to_string();
 ## Benchmarks
 
 ```
-gen_ulid_and_to_string/j5ik2o/ulid-rs/gen_to_str/0
+gen_ulid_and_to_string/j5ik2o/ulid-generator-rs/gen_to_str/0
 time:   [117.15 ns 117.26 ns 117.39 ns]
 change: [-1.7662% -0.9620% -0.3349%] (p = 0.00 < 0.05)
 Change within noise threshold.
