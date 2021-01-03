@@ -20,7 +20,7 @@ Add this to your `Cargo.toml`:
 ## Benchmarks
 
 ```
-gen_ulid_and_to_string/j5ik2o/ulid-rs/gen_to_str/0
+gen_ulid_and_to_string/j5ik2o/ulid-generator-rs/gen_to_str/0
 time:   [117.15 ns 117.26 ns 117.39 ns]
 change: [-1.7662% -0.9620% -0.3349%] (p = 0.00 < 0.05)
 Change within noise threshold.

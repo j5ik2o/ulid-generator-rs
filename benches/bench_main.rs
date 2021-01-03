@@ -89,10 +89,10 @@ fn criterion_benchmark(c: &mut Criterion) {
   let mut gen = ULIDGenerator::new();
   let op = 0u8;
   // let prev_id = gen.generate().unwrap();
-  // group.bench_with_input(BenchmarkId::new("j5ik2o/ulid-rs/gen", op), &op, |b, i| {
+  // group.bench_with_input(BenchmarkId::new("j5ik2o/ulid-generator-rs/gen", op), &op, |b, i| {
   //   b.iter(|| j5ik2o_uild_gen(&mut gen))
   // });
-  // group.bench_with_input(BenchmarkId::new("j5ik2o/ulid-rs/gen_monotonic", op), &op, |b, i| {
+  // group.bench_with_input(BenchmarkId::new("j5ik2o/ulid-generator-rs/gen_monotonic", op), &op, |b, i| {
   //   b.iter(|| j5ik2o_uild_monotonic_gen(&mut gen, &prev_id))
   // });
   // group.bench_with_input(BenchmarkId::new("dylanhart/ulid-rs/gen", op), &op, |b, i| {
@@ -106,7 +106,7 @@ fn criterion_benchmark(c: &mut Criterion) {
   // });
   // // ---
   // let ulid = gen.generate().unwrap();
-  // group.bench_with_input(BenchmarkId::new("j5ik2o/ulid-rs/str", op), &op, |b, i| {
+  // group.bench_with_input(BenchmarkId::new("j5ik2o/ulid-generator-rs/str", op), &op, |b, i| {
   //   b.iter(|| j5ik2o_ulid_to_string(&ulid))
   // });
   // let ulid = ulid::Ulid::new();
@@ -122,9 +122,11 @@ fn criterion_benchmark(c: &mut Criterion) {
   //   b.iter(|| suyash_ulid_rs_to_string(&ulid))
   // });
   // ---
-  group.bench_with_input(BenchmarkId::new("j5ik2o/ulid-rs/gen_to_str", op), &op, |b, i| {
-    b.iter(|| j5ik2o_ulid_gen_to_string(&mut gen))
-  });
+  group.bench_with_input(
+    BenchmarkId::new("j5ik2o/ulid-generator-rs/gen_to_str", op),
+    &op,
+    |b, i| b.iter(|| j5ik2o_ulid_gen_to_string(&mut gen)),
+  );
   group.bench_with_input(BenchmarkId::new("dylanhart/ulid-rs/gen_to_str", op), &op, |b, i| {
     b.iter(|| dylanhart_ulid_rs_gen_to_string())
   });
