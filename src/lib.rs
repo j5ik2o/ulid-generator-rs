@@ -31,7 +31,7 @@
 //! - https://github.com/suyash/ulid-rs
 #![allow(dead_code)]
 
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::str::FromStr;
 
@@ -473,13 +473,11 @@ impl ULID {
     if byte_array.len() != ULID_BYTES_LENGTH as usize {
       Err(ULIDError::InvalidByteArrayError)
     } else {
+      let b: [u8; ULID_BYTES_LENGTH as usize] = byte_array.try_into().map_err(|_| ULIDError::InvalidByteArrayError)?;
       let result = if endian == Endian::BE {
-        byte_array.iter().fold(0u128, |result, e| (result << 8) | *e as u128)
+        u128::from_be_bytes(b)
       } else {
-        byte_array
-          .iter()
-          .rev()
-          .fold(0u128, |result, e| (result << 8) | *e as u128)
+        u128::from_le_bytes(b)
       };
       Ok(Self(result))
     }
