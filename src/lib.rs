@@ -18,8 +18,10 @@
 //! ```rust
 //! use ulid_generator_rs::{ULIDGenerator, ULID};
 //!
-//! let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+//! let mut generator: ULIDGenerator = ULIDGenerator::new();
+//! let ulid: ULID = generator.generate().unwrap();
 //! let str: String = ulid.to_string();
+//! println!("{}", str); // "01ETGRM6448X1HM0PYWG2KT648"
 //! ```
 //!
 //! # Alternative crates
@@ -310,7 +312,9 @@ impl ULID {
   /// let ulid: ULID = ULID::new(1945530789360716160560926739305506752);
   ///
   /// // Use `ULIDGenerator::generate` as follows
-  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
+  /// println!("{}", ulid); // "01ETGRM6448X1HM0PYWG2KT648"
   /// ```
   #[must_use]
   pub fn new(value: u128) -> Self {
@@ -322,10 +326,11 @@ impl ULID {
   /// # Example
   ///
   /// ```rust
-  /// use ulid_generator_rs::ULIDGenerator;
+  /// use ulid_generator_rs::{ULIDGenerator, ULID};
   ///
-  /// let ulid = ULIDGenerator::new().generate().unwrap();
-  /// let str = ulid.to_string();
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
+  /// let str: String = ulid.to_string();
   /// println!("{}", str); // "01ETGRM6448X1HM0PYWG2KT648"
   /// ```
   #[allow(clippy::unknown_clippy_lints)]
@@ -340,9 +345,11 @@ impl ULID {
   /// # Example
   ///
   /// ```rust
-  /// use ulid_generator_rs::ULIDGenerator;
-  /// let ulid = ULIDGenerator::new().generate().unwrap();
-  /// let next_ulid = ulid.increment();
+  /// use ulid_generator_rs::{ULIDGenerator, ULID};
+  ///
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
+  /// let next_ulid: ULID = ulid.increment();
   /// ```
   pub fn increment(&self) -> Self {
     let lsb = self.least_significant_bits();
@@ -365,7 +372,8 @@ impl ULID {
   /// ```rust
   /// use ulid_generator_rs::{ULIDGenerator, ULID};
   ///
-  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
   /// let m: u64 = ulid.most_significant_bits();
   /// ```
   #[must_use]
@@ -380,7 +388,8 @@ impl ULID {
   /// ```rust
   /// use ulid_generator_rs::{ULIDGenerator, ULID};
   ///
-  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
   /// let l: u64 = ulid.least_significant_bits();
   /// ```
   #[must_use]
@@ -395,7 +404,8 @@ impl ULID {
   /// ```rust
   /// use ulid_generator_rs::{ULIDGenerator, ULID};
   ///
-  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
   /// let epoch: i64 = ulid.to_epoch_milli_as_long();
   /// ```
   #[must_use]
@@ -411,7 +421,8 @@ impl ULID {
   /// use ulid_generator_rs::{ULIDGenerator, ULID};
   /// use chrono::{Local, DateTime};
   ///
-  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
   /// let date_time: DateTime<Local> = ulid.to_date_time();
   /// ```
   #[must_use]
@@ -428,7 +439,8 @@ impl ULID {
   /// ```rust
   /// use ulid_generator_rs::{ULIDGenerator, ULID, Endian};
   ///
-  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
   /// let ba: Vec<u8> = ulid.to_byte_array(Endian::BE);
   /// ```
   #[must_use]
@@ -452,7 +464,8 @@ impl ULID {
   /// ```rust
   /// use ulid_generator_rs::{ULIDGenerator, ULID, Endian};
   ///
-  /// let ulid: ULID = ULIDGenerator::new().generate().unwrap();
+  /// let mut generator: ULIDGenerator = ULIDGenerator::new();
+  /// let ulid: ULID = generator.generate().unwrap();
   /// let ba: Vec<u8> = ulid.to_byte_array(Endian::BE);
   /// let ulid: ULID = ULID::parse_from_byte_array(ba, Endian::BE).unwrap();
   /// ```
