@@ -12,7 +12,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ulid-generator-rs = "0.0.4"
+ulid-generator-rs = "0.0.5"
 ```
 
 ## About ULID
