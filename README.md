@@ -2,9 +2,11 @@
 
 A Rust crate for generating ULIDs.
 
+[![Workflow Status](https://github.com/j5ik2o/ulid-generator-rs/workflows/Rust/badge.svg)](https://github.com/j5ik2o/ulid-generator-rs/actions?query=workflow%3A%22Rust%22)
 [![crates.io](https://img.shields.io/crates/v/ulid-generator-rs.svg)](https://crates.io/crates/ulid-generator-rs)
 [![docs.rs](https://docs.rs/ulid-generator-rs/badge.svg)](https://docs.rs/ulid-generator-rs)
-[![Workflow Status](https://github.com/j5ik2o/ulid-generator-rs/workflows/Rust/badge.svg)](https://github.com/j5ik2o/ulid-generator-rs/actions?query=workflow%3A%22Rust%22)
+[![dependency status](https://deps.rs/repo/github/j5ik2o/ulid-generator-rs/status.svg)](https://deps.rs/repo/github/j5ik2o/ulid-generator-rs)
+[![tokei](https://tokei.rs/b1/github/j5ik2o/ulid-generator-rs)](https://github.com/XAMPPRocky/tokei)
 
 ## Install to Cargo.toml
 
@@ -12,7 +14,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ulid-generator-rs = "0.0.6"
+ulid-generator-rs = "0.0.9"
 ```
 
 ## About ULID
