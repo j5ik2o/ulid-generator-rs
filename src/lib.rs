@@ -538,7 +538,7 @@ impl TryFrom<ByteArray> for ULID {
 }
 
 /// This is the [ULID] Generator.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct ULIDGenerator {
   rng: ThreadRng,
 }
