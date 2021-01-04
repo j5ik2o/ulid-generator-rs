@@ -2,9 +2,11 @@
 
 A Rust crate for generating ULIDs.
 
+{{badges}}
 [![crates.io](https://img.shields.io/crates/v/ulid-generator-rs.svg)](https://crates.io/crates/ulid-generator-rs)
 [![docs.rs](https://docs.rs/ulid-generator-rs/badge.svg)](https://docs.rs/ulid-generator-rs)
-{{badges}}
+[![dependency status](https://deps.rs/repo/github/j5ik2o/ulid-generator-rs/status.svg)](https://deps.rs/repo/github/j5ik2o/ulid-generator-rs)
+[![tokei](https://tokei.rs/b1/github/j5ik2o/ulid-generator-rs)](https://github.com/XAMPPRocky/tokei)
 
 ## Install to Cargo.toml
 
