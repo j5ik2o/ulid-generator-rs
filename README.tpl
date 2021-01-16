@@ -14,7 +14,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-{{crate}} = "{{version}}"
+{{crate}} = "<<version>>"
 ```
 
 {{readme}}
