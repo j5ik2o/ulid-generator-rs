@@ -277,7 +277,7 @@ const fn append_crockford_u128(value: u128) -> [u8; 26] {
 }
 
 /// This enum is the endian types.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Endian {
   /// Little endian.
   LE,
@@ -286,7 +286,7 @@ pub enum Endian {
 }
 
 /// This struct is [ULID].
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Copy, Clone, Hash, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ULID(u128);
 
 impl fmt::Display for ULID {
