@@ -290,6 +290,7 @@ pub enum Endian {
 pub struct ULID(u128);
 
 unsafe impl Send for ULID {}
+unsafe impl Sync for ULID {}
 
 impl fmt::Display for ULID {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -544,6 +545,9 @@ impl TryFrom<ByteArray> for ULID {
 pub struct ULIDGenerator {
   rng: ThreadRng,
 }
+
+unsafe impl Send for ULIDGenerator {}
+unsafe impl Sync for ULIDGenerator {}
 
 impl ULIDGenerator {
   /// The Constructor for [ULIDGenerator].
