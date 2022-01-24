@@ -23,7 +23,7 @@ uuid = { version = "0.8.1", features = ["v4"], optional = true }
 [dev-dependencies]
 criterion = "0.3"
 # huxi/rusty_ulid
-rusty_ulid = "0.11.0"
+rusty_ulid = "1.0.0"
 # dylanhart/ulid-rs
 ulid = "0.4.1"
 # suyash/ulid-rs
