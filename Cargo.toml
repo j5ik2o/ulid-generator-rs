@@ -14,7 +14,7 @@ repository = "https://github.com/j5ik2o/ulid-generator-rs"
 github = { repository = "j5ik2o/ulid-generator-rs", workflow = "Rust" }
 
 [dependencies]
-rand = { version = "0.8.1" }
+rand = { version = "0.8.5" }
 chrono = { version = "0.4"}
 thiserror = { version = "1.0.20" }
 serde = { version = "1.0", features = ["derive"], optional = true }
