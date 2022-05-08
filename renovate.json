@@ -5,6 +5,7 @@
   "cargo": {
     "enabled": true
   },
+  "platformAutomerge": true,
   "packageRules": [
     {
       "matchUpdateTypes": [
