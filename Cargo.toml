@@ -21,7 +21,7 @@ serde = { version = "1.0", features = ["derive"], optional = true }
 uuid = { version = "1.1.2", features = ["v4"], optional = true }
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = "0.4"
 # huxi/rusty_ulid
 rusty_ulid = "1.0.0"
 # dylanhart/ulid-rs
