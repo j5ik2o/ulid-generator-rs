@@ -45,7 +45,7 @@ jobs:
         VERSION=$(echo '${{ steps.dry_run_tag_version.outputs.new_tag }}' | sed 's/^v//')
         echo "::set-output name=version::$VERSION"
       if: steps.changes.outputs.count > 0
-    - uses: baptiste0928/cargo-install@v1
+    - uses: baptiste0928/cargo-install@v2
       with:
         crate: cargo-edit
     - name: Update version
