@@ -1,0 +1,83 @@
+name: bump-version
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        persist-credentials: true
+        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+    - name: Calculate changes from the latest tag to HEAD
+      id: changes
+      run: |
+        LATEST_TAG=$(git describe --abbrev=0)
+        echo "latest-tag = $LATEST_TAG"
+        COUNT=$(git log $LATEST_TAG..HEAD --pretty=format:"%s" --no-merges \
+          --grep='^build:' \
+          --grep='^ci:' \
+          --grep='^feat:' \
+          --grep='^fix:' \
+          --grep='^docs:' \
+          --grep='^style:' \
+          --grep='^refactor:' \
+          --grep='^perf:' \
+          --grep='^test:' \
+          --grep='^revert:' \
+          --grep='^chore:' | awk 'END{print NR}')
+        echo "steps.changes.outputs.count = $COUNT"
+        echo "::set-output name=count::$COUNT"
+    - name: Get the next version
+      id: dry_run_tag_version
+      uses: mathieudutour/github-tag-action@v6.1
+      with:
+        github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        default_bump: patch
+        dry_run: true
+      if: steps.changes.outputs.count > 0
+    - name: Calculate the version
+      id: version
+      run: |
+        VERSION=$(echo '${{ steps.dry_run_tag_version.outputs.new_tag }}' | sed 's/^v//')
+        echo "::set-output name=version::$VERSION"
+      if: steps.changes.outputs.count > 0
+    - uses: baptiste0928/cargo-install@v1
+      with:
+        crate: cargo-edit
+    - name: Update version
+      run: |
+        cargo set-version ${{ steps.version.outputs.version }}
+      if: steps.changes.outputs.count > 0
+    - name: Execute commit & push
+      id: git_commit_push
+      run: |
+        git config --global user.email "j5ik2o@gmail.com"
+        git config --global user.name "Junichi Kato"
+        git diff
+        git add .
+        git commit -m 'upgrade version to v${{ steps.version.outputs.version }}'
+        git push origin main
+        COMMIT_SHA=$(git rev-parse HEAD)
+        echo "::set-output name=commit_sha::$COMMIT_SHA"
+      if: steps.changes.outputs.count > 0
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.1
+      with:
+        commit_sha: ${{ steps.git_commit_push.outputs.commit_sha }}
+        github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        default_bump: patch
+      if: steps.changes.outputs.count > 0
+    - name: Create the GitHub release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag_version.outputs.new_tag }}
+        release_name: Release ${{ steps.tag_version.outputs.new_tag }}
+        body: ${{ steps.tag_version.outputs.changelog }}
+      if: steps.changes.outputs.count > 0

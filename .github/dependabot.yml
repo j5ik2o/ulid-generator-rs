@@ -1,8 +1,12 @@
 version: 2
 updates:
-- package-ecosystem: cargo
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "20:00"
-  open-pull-requests-limit: 10
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: daily
+    allow:
+      - dependency-type: all
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
