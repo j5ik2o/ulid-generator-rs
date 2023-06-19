@@ -18,17 +18,7 @@ jobs:
         LATEST_TAG=$(git describe --abbrev=0)
         echo "latest-tag = $LATEST_TAG"
         COUNT=$(git log $LATEST_TAG..HEAD --pretty=format:"%s" --no-merges \
-          --grep='^build:' \
-          --grep='^ci:' \
-          --grep='^feat:' \
-          --grep='^fix:' \
-          --grep='^docs:' \
-          --grep='^style:' \
-          --grep='^refactor:' \
-          --grep='^perf:' \
-          --grep='^test:' \
-          --grep='^revert:' \
-          --grep='^chore:' | awk 'END{print NR}')
+          -P --grep='^(build|ci|feat|fix|docs|style|refactor|perf|test|revert|chore)(\(.*\))?:' | awk 'END{print NR}')
         echo "steps.changes.outputs.count = $COUNT"
         echo "::set-output name=count::$COUNT"
     - name: Get the next version
