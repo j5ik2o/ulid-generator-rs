@@ -1,11 +1,6 @@
 name: bump-version
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - parser-release
-    types:
-      - completed
   schedule:
     - cron: '0 0 * * *'
 jobs:
@@ -26,7 +21,7 @@ jobs:
       - run: pip install semver
       - id: defines
         run: |
-          LATEST_TAG=$(git tag -l --sort=-taggerdate | head -n 1)
+          LATEST_TAG=$(git describe --abbrev=0)
           echo "LATEST_TAG=$LATEST_TAG"
           echo "::set-output name=prev_tag::$LATEST_TAG"
       - name: Calculate changes from the latest tag to HEAD
