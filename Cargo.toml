@@ -18,7 +18,7 @@ rand = { version = "0.8.5" }
 chrono = { version = "0.4"}
 thiserror = { version = "1.0.56" }
 serde = { version = "1.0", features = ["derive"], optional = true }
-uuid = { version = "1.6.1", features = ["v4"], optional = true }
+uuid = { version = "1.7.0", features = ["v4"], optional = true }
 
 [dev-dependencies]
 criterion = "0.5"
