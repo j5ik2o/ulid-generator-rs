@@ -25,7 +25,7 @@ criterion = "0.5"
 # huxi/rusty_ulid
 rusty_ulid = "2.0.0"
 # dylanhart/ulid-rs
-ulid = "1.1.0"
+ulid = "1.1.1"
 # suyash/ulid-rs
 ulid-rs = "0.1.0"
 
